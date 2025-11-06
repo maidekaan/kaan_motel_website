@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container my-5">
+    <h1 class="text-center mb-4">Yeni Hesap Oluştur</h1>
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            
+            {# --- DÜZELTME: FLASH MESAJLARI EKLENDİ (Tema sorununu çözmek için kritik) --- #}
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        {# Bootstrap renkleri için category kullanılır (success, danger, warning, info) #}
+                        <div class="alert alert-{{ category }}">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+            {# --------------------------------------------------------------------------------- #}
+            
+            <form method="POST">
+                
+                {# --- DÜZELTME 1: AD ALANI EKLENDİ --- #}
+                <div class="mb-3">
+                    <label for="first_name" class="form-label">Adınız</label>
+                    <input type="text" class="form-control" id="first_name" name="first_name" required 
+                           placeholder="Adınızı Giriniz">
+                </div>
+                
+                {# --- DÜZELTME 2: SOYAD ALANI EKLENDİ --- #}
+                <div class="mb-3">
+                    <label for="last_name" class="form-label">Soyadınız</label>
+                    <input type="text" class="form-control" id="last_name" name="last_name" required 
+                           placeholder="Soyadınızı Giriniz">
+                </div>
+
+                <div class="mb-3">
+                    <label for="username" class="form-label">Kullanıcı Adı</label>
+                    <input type="text" class="form-control" id="username" name="username" required 
+                           placeholder="Kullanıcı Adı Seçiniz">
+                </div>
+                
+                <div class="mb-3">
+                    <label for="email" class="form-label">E-posta</label>
+                    <input type="email" class="form-control" id="email" name="email" required 
+                           placeholder="E-posta Adresiniz">
+                </div>
+                
+                <div class="mb-3">
+                    <label for="password" class="form-label">Şifre</label>
+                    <input type="password" class="form-control" id="password" name="password" required>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="password_confirm" class="form-label">Şifre Tekrar</label>
+                    <input type="password" class="form-control" id="password_confirm" name="password_confirm" required>
+                </div>
+                
+                <div class="form-check mb-3">
+                    <input class="form-check-input" type="checkbox" name="kvkk_consent" id="kvkkConsent" value="on" required>
+                    <label class="form-check-label" for="kvkkConsent">
+                        KVKK Aydınlatma Metnini Okudum ve Onaylıyorum. 
+                        <a href="{{ url_for('kvkk_metni') }}" target="_blank" style="font-weight: 600;">(Metni Oku)</a>
+                        (Kampanya ve bilgilendirme e-postaları için izin veriyorum.)
+                    </label>
+                </div>
+                
+                <button type="submit" class="btn btn-primary w-100">Kayıt Ol</button>
+            </form>
+            <p class="mt-3 text-center">Zaten hesabınız var mı? <a href="{{ url_for('login') }}">Giriş Yapın</a></p>
+        </div>
+    </div>
+</div>
+{% endblock %}

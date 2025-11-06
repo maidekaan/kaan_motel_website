@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="section-title">
+    <div class="container">
+        <h1>Yönetici Girişi</h1>
+        <p>Rezervasyon Yönetim Sistemine erişmek için lütfen giriş yapın.</p>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="flash-message flash-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+    </div>
+</section>
+
+<section class="admin-login-section">
+    <div class="container">
+        <form method="POST" action="{{ url_for('login') }}" class="login-form">
+            <div class="form-group">
+                <label for="username">Kullanıcı Adı</label>
+                <input type="text" id="username" name="username" required>
+            </div>
+            <div class="form-group">
+                <label for="password">Şifre</label>
+                <input type="password" id="password" name="password" required>
+            </div>
+            <button type="submit" class="btn-lg btn-primary">Giriş Yap</button>
+<p class="mt-3 text-center">
+    <a href="{{ url_for('forgot_password') }}">Şifremi Unuttum?</a> | 
+    <a href="{{ url_for('forgot_username') }}">Kullanıcı Adımı Unuttum?</a>
+</p>
+
+        </form>
+    </div>
+</section>
+
+{% endblock %}

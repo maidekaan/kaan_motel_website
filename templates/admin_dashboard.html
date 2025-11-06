@@ -1,0 +1,556 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="section-title py-4 bg-light border-bottom">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center flex-wrap">
+            <div>
+                <h1 class="h3 mb-1">Yönetim Paneli</h1>
+                <p class="text-muted mb-3">Hoş geldiniz, {{ current_user.username }}! Sistem durumunu buradan yönetebilirsiniz.</p>
+            </div>
+            <div class="d-flex flex-wrap gap-2">
+                <a href="{{ url_for('logout') }}" class="btn btn-outline-secondary btn-sm">Çıkış Yap</a>
+                <a href="{{ url_for('add_reservation') }}" class="btn btn-primary btn-sm">+ Yeni Telefon Rezervasyonu</a>
+                <a href="{{ url_for('add_mission') }}" class="btn btn-info btn-sm">+ Yeni Görev Ekle</a>
+            </div>
+        </div>
+        
+        <div class="message-area mt-3">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category.replace('message', 'info') }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+            {% endwith %}
+        </div>
+    </div>
+</section>
+
+<section class="dashboard-content py-4">
+    <div class="container">
+
+        <ul class="nav nav-tabs mb-4" id="dashboardTabs" role="tablist">
+            <li class="nav-item">
+                <a class="nav-link active" id="reservations-tab" data-toggle="tab" href="#reservations" role="tab">Rezervasyonlar</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" id="users-tab" data-toggle="tab" href="#users-list" role="tab">Müşteriler</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" id="calendar-tab" data-toggle="tab" href="#calendar" role="tab">Takvim</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" id="missions-tab" data-toggle="tab" href="#missions-management" role="tab">Görevler</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" id="redemptions-tab" data-toggle="tab" href="#redemptions-approval" role="tab">Ödül Talepleri</a>
+            </li>
+        </ul>
+
+        <div class="tab-content">
+            
+            <div class="tab-pane fade show active" id="reservations" role="tabpanel">
+                <h3 class="mb-3 border-bottom pb-2">Aktif ve Gelecek Rezervasyonlar</h3>
+                <div class="table-responsive">
+                    <table class="table table-hover table-striped dashboard-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Oda No (Atama)</th>
+                                <th>Oda Tipi (Kullanılan)</th>
+                                <th>Misafir</th>
+                                <th>Giriş</th>
+                                <th>Çıkış</th>
+                                <th>Kişi</th>
+                                <th>Durum</th>
+                                <th>İletişim</th>
+                                <th>Oda Ata</th>
+                                <th>İşlemler</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for res in reservations %}
+                            <tr class="status-{{ res.status | lower | replace(' ', '-') }}"> 
+                                <td>{{ res.id }}</td>
+                                
+                                {# Oda No (Atama) Sütunu #}
+                                <td>
+                                    {% if res.room_type == "Yat Kulübü" and res.status not in ['Onaylandı', 'Giriş Yaptı', 'Çıkış Yaptı'] %}
+                                        <strong class="text-danger fw-bold">ATAMA BEKLİYOR</strong>
+                                    {% elif res.room %}
+                                        <strong>{{ res.room.room_number }}</strong>
+                                    {% else %}
+                                        <span class="text-danger fw-bold">Atanmadı</span>
+                                    {% endif %}
+                                </td>
+                                
+                                {# Oda Tipi (Kullanılan) Sütunu #}
+                                <td>
+                                    {% if res.room_type == "Yat Kulübü" %}
+                                        <span class="text-info fw-bold">YAT KULÜBÜ</span>
+                                    {% elif res.room %}
+                                        {{ res.room.room_type }}
+                                    {% else %}
+                                        --
+                                    {% endif %}
+                                </td>
+                                
+                                <td>{{ res.guest_name }}</td>
+                                <td>{{ res.check_in }}</td>
+                                <td>{{ res.check_out }}</td>
+                                <td>{{ res.adults }} / {{ res.children }}</td>
+                                <td><span class="badge bg-{{ res.status | lower | replace(' ', '-') }}">{{ res.status }}</span></td>
+                                <td><a href="tel:{{ res.guest_phone }}" class="text-decoration-none">{{ res.guest_phone }}</a></td>
+
+                                <td>
+                                    {# ODA ATAMA KISMI - YAT KULÜBÜ ARTIK DAHİL #}
+                                    {% if res.status in ['Online Onay Bekliyor', 'Telefon Onaylı', 'Yat Kulübü Talebi (Admin Bekliyor)', 'Yat Kulübü Rezervasyonu'] %}
+} 
+                                        <div class="d-flex gap-1">
+                                            <select id="room-select-{{ res.id }}" class="form-select form-select-sm me-1" style="max-width: 150px;">
+    <option value="">Oda seç...</option>
+    {% for room in rooms %}
+        {% set room_display_name = {
+            'STD01':'Oda 1',
+            'STD02':'Oda 2',
+            'STD03':'Oda 3',
+            'STD04':'Oda 4',
+            'SUI01':'Suit',
+            'PET01':'Oda 7',
+            'STD07':'Oda 8',
+            'LSU01':'Üst Kat'
+        }[room.room_number] %}
+        <option value="{{ room.id }}" {% if res.room and room.id == res.room.id %}selected{% endif %}>
+            {{ room_display_name }}
+        </option>
+    {% endfor %}
+</select>
+                                        </div>
+                                    {% else %}
+                                        
+                                        {% if res.room_type == "Yat Kulübü" and res.room %}
+                                            <small class="text-muted fw-bold">{{ res.room.room_number }}</small> 
+                                        {% elif res.room %}
+                                            <small class="text-muted">{{ res.room.room_number }}</small>
+                                        {% else %}
+                                            <small class="text-muted">--</small>
+                                        {% endif %}
+                                    {% endif %}
+                                </td>
+
+                                <td class="text-nowrap">
+                                    {% if res.status in ['Online Onay Bekliyor', 'Telefon Onaylı', 'Yat Kulübü Talebi (Admin Bekliyor)'] %} 
+                                        <button class="btn btn-success btn-sm" onclick="approveReservation({{ res.id }})">Onayla</button>
+                                    {% elif res.status == 'Onaylandı' and res.room_type == 'Yat Kulübü' and not res.room %}
+                                        {# Yat Kulübü Onaylandı ama oda atanmadıysa, Onayla butonu tekrar görünmeli (room_select ile birlikte) #}
+                                        <button class="btn btn-success btn-sm" onclick="approveReservation({{ res.id }})">Oda Ata/Onayla</button>
+                                    {% elif res.status == 'Onaylandı' %}
+                                        <a href="{{ url_for('update_reservation_status', reservation_id=res.id, new_status='Giriş Yaptı') }}" class="btn btn-primary btn-sm">Giriş</a>
+                                    {% endif %}
+                                    
+                                    {% if res.status == 'Giriş Yaptı' %}
+                                        <a href="{{ url_for('update_reservation_status', reservation_id=res.id, new_status='Çıkış Yaptı') }}" class="btn btn-secondary btn-sm">Çıkış</a>
+                                    {% endif %}
+
+                                    {% if res.status not in ['İptal', 'Çıkış Yaptı'] %}
+                                        <a href="{{ url_for('delete_reservation', reservation_id=res.id) }}" 
+                                            onclick="return confirm('{{ res.guest_name }} misafirinin rezervasyonunu kesinlikle silmek istediğinizden emin misiniz? Bu işlem geri alınamaz!')"
+                                            class="btn btn-danger btn-sm">Sil/İptal Et</a>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="11" class="text-center text-muted py-3">Şu anda aktif veya gelecek bir rezervasyon bulunmamaktadır.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <div class="tab-pane fade" id="users-list" role="tabpanel">
+                <h3 class="mb-3 border-bottom pb-2">Sadakat Sistemi Müşterileri</h3>
+                <div class="table-responsive">
+                    <table class="table table-hover table-striped dashboard-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Kullanıcı Adı</th>
+                                <th>E-posta</th>
+                                <th>Ad</th>
+                                <th>Soyad</th>
+                                <th>Toplam Puan</th>
+                                <th>Kayıt Tarihi</th>
+                                <th>İşlemler</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for user in users_list %}
+                            <tr>
+                                <td>{{ user.id }}</td>
+                                <td>{{ user.username }}</td>
+                                <td>{{ user.email }}</td>
+                                <td>{{ user.first_name or 'Yok' }}</td>
+                                <td>{{ user.last_name or 'Yok' }}</td>
+                                <td><span class="badge bg-info fs-6">{{ user.total_points }}</span></td>
+                                <td>{{ user.registered_on.strftime('%d.%m.%Y') if user.registered_on else 'N/A' }}</td>
+                                <td class="text-nowrap">
+                                    <button class="btn btn-sm btn-outline-primary" title="Puan Ekle/Çıkar">Puan Yönet</button>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="8" class="text-center text-muted py-3">Henüz sadakat sistemine kayıtlı müşteri bulunmamaktadır (Admin hariç).</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <div class="tab-pane fade" id="calendar" role="tabpanel">
+                <h3 class="mb-3 border-bottom pb-2">Müsaitlik Takvimi (Oda Bazlı)</h3>
+
+                <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                    <button class="btn btn-outline-secondary btn-sm" id="prevMonth">← Önceki Ay</button>
+                    <h4 id="currentMonthYear" class="mb-0 text-dark fw-bold"></h4>
+                    <button class="btn btn-outline-secondary btn-sm" id="nextMonth">Sonraki Ay →</button>
+                </div>
+
+                <div id="roomCalendarContainer" class="table-responsive">
+                    <div class="alert alert-info" role="alert">Takvim verileri yükleniyor...</div>
+                </div>
+            </div>
+            
+            <div class="tab-pane fade" id="missions-management" role="tabpanel">
+    <h3 class="mb-3 border-bottom pb-2">Görev (Mission) Yönetimi</h3>
+    <a href="{{ url_for('add_mission') }}" class="btn btn-success btn-sm mb-3">
+        <i class="fas fa-plus"></i> Yeni Görev Ekle
+    </a>
+    
+    <div class="table-responsive">
+        <table class="table table-hover table-striped dashboard-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Başlık</th>
+                    <th>Açıklama</th><th>Puan</th>
+                    <th>Tipi</th>
+                    <th>Tekrar?</th>
+                    <th>Durum</th>
+                    <th>İşlemler</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for mission in missions %}
+                <tr>
+                    <td>{{ mission.id }}</td>
+                    <td>{{ mission.title }}</td>
+                    <td class="text-muted small" style="max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ mission.description or 'Açıklama yok' }}</td> <td><span class="badge bg-success">+{{ mission.points_reward }}</span></td>
+                    <td>{{ mission.type }}</td>
+                    <td>{% if mission.is_repeatable %}Evet{% else %}Hayır{% endif %}</td>
+                    <td>
+                        {% if mission.is_active %}
+                            <span class="badge bg-success">Aktif</span>
+                        {% else %}
+                            <span class="badge bg-warning text-dark">Pasif</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-nowrap">
+                        <a href="{{ url_for('toggle_mission', mission_id=mission.id) }}" 
+                           class="btn btn-sm {% if mission.is_active %}btn-danger{% else %}btn-success{% endif %}">
+                            {% if mission.is_active %}Yayından Kaldır{% else %}Aktif Et{% endif %}
+                        </a>
+                        
+                        {% if mission.type not in ['SOCIAL_SHARE', 'NEWSLETTER_SUBSCRIBE', 'FIRST_LOGIN'] %}
+                            <button class="btn btn-sm btn-info dropdown-toggle" type="button" data-toggle="dropdown">
+                                Onay Bekleyenleri Gör
+                            </button>
+                            <div class="dropdown-menu">
+                                {% for user in users_list %}
+                                    <a class="dropdown-item" 
+                                       href="{{ url_for('approve_mission_manual', user_id=user.id, mission_id=mission.id) }}" 
+                                       onclick="return confirm('{{ user.username }} kullanıcısının {{ mission.title }} görevini onaylamak istediğinizden emin misiniz?');">
+                                        {{ user.username }} (Puan Ekle)
+                                    </a>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="8" class="text-center text-muted py-3">Yönetici tarafından tanımlanmış görev bulunmamaktadır.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+            
+            <div class="tab-pane fade" id="redemptions-approval" role="tabpanel">
+                <h3 class="mb-3 border-bottom pb-2">Ödül Talep Onayları</h3>
+                <div class="table-responsive">
+                    <table class="table table-hover table-striped dashboard-table">
+                        <thead>
+                            <tr>
+                                <th>Talep ID</th>
+                                <th>Kullanıcı</th>
+                                <th>Ödül</th>
+                                <th>Puan</th>
+                                <th>Tarih</th>
+                                <th>İşlemler</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for redemption in pending_redemptions %}
+                            <tr>
+                                <td>{{ redemption.id }}</td>
+                                <td>{{ redemption.user.username }}</td>
+                                <td>{{ redemption.reward.title }}</td>
+                                <td><span class="badge bg-danger">{{ redemption.points_used }}</span></td>
+                                <td>{{ redemption.redemption_date.strftime('%d.%m.%Y') }}</td>
+                                <td class="text-nowrap">
+                                    <a href="{{ url_for('approve_redemption', redemption_id=redemption.id) }}" class="btn btn-success btn-sm">Onayla</a>
+                                    <a href="{{ url_for('reject_redemption', redemption_id=redemption.id) }}" class="btn btn-danger btn-sm">Reddet</a>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr><td colspan="6" class="text-center text-muted py-3">Onay bekleyen ödül talebi bulunmuyor.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</section>
+
+<style>
+/* TEMEL STİLLER (TEMA RENKLERİNİ DEĞİŞTİRMEDİM) */
+
+/* Genel Tablo İyileştirmeleri */
+.dashboard-table th {
+    font-weight: 600;
+    background-color: #f8f9fa; /* Hafif arka plan */
+}
+
+.dashboard-table td, .dashboard-table th {
+    vertical-align: middle;
+    padding: 0.75rem 0.5rem; /* İç dolguyu biraz daralttım */
+}
+
+.text-nowrap td {
+    white-space: nowrap;
+}
+
+/* Durum Rozetleri (Badgeler) için temel stiller */
+.badge {
+    padding: 0.35em 0.65em;
+    font-weight: 700;
+    line-height: 1;
+    color: #fff;
+    text-align: center;
+    white-space: nowrap;
+    vertical-align: baseline;
+    border-radius: 0.25rem;
+}
+
+/* Duruma özel renkler (Bootstrap'in varsayılan renkleri kullanılmıştır) */
+.status-onaylandı { background-color: #198754 !important; } /* Green */
+.status-telefon-onaylı, .status-online-onay-bekliyor { background-color: #ffc107 !important; color: #212529 !important; } /* Yellow/Warning */
+.status-giriş-yaptı { background-color: #0d6efd !important; } /* Blue/Primary */
+.status-çıkış-yaptı, .status-iptal { background-color: #dc3545 !important; } /* Red/Danger */
+
+/* Oda Seçim Kutusu Stili (Rezervasyon Tablosu İçin) */
+.form-select-sm {
+    max-width: 120px;
+    font-size: 0.75rem;
+}
+
+/* Takvim Stilleri (Eski koddan kalma, sadece bakım için tutuldu) */
+#roomCalendarContainer table {
+    min-width: 1000px; /* Yatay kaydırma için minimum genişlik */
+    border-collapse: collapse;  
+    text-align: center;
+    font-size: 0.85rem;
+}
+#roomCalendarContainer th {
+    background-color: #f7f7f7;
+    padding: 6px;
+    font-weight: 600;
+}
+#roomCalendarContainer td {
+    padding: 4px;
+    border: 1px solid #dee2e6;  
+    vertical-align: middle;
+    height: 35px;  
+}
+
+.bg-danger-subtle { background-color: #f8d7da !important; color: #721c24; }
+.bg-danger { background-color: #dc3545 !important; color: #fff; } 
+.bg-light-subtle { background-color: #e9ecef !important; } /* Hafta sonu gri */
+
+/* Buton Grupları Arasındaki Boşluk */
+.action-buttons > * {
+    margin-right: 0.25rem;
+}
+
+/* 🏆 YAT KULÜBÜ SATIRI İÇİN EK STİL (Takvim) 🏆 */
+/* Bu stil, API'den gelen veri içinde en son satırın YAT KULÜBÜ satırı olduğu varsayımıyla çalışır. */
+#roomCalendarContainer table tbody tr:last-child td:first-child {
+    background-color: #b2ebf2 !important; /* Daha belirgin bir açık mavi */
+    font-weight: bold;
+    color: #006064; /* Koyu turkuaz yazı */
+}
+</style>
+
+<script>
+/* --- approveReservation FONKSİYONU (Mevcut) --- */
+function approveReservation(reservationId) {
+    const select = document.getElementById(`room-select-${reservationId}`);
+
+    if (!select || select.value === '') {
+        alert('Lütfen rezervasyonu onaylamadan önce tablo üzerindeki Oda Seç kutusundan bir oda seçin!');
+        return;
+    }
+    
+    const roomId = select.value;
+
+    // URL yapısı, Flask'ın dinamik kısımlarını dikkate alarak güncellendi
+    const urlBase = '{{ url_for("update_reservation_status", reservation_id=0, new_status="Onaylandı") }}';
+    const finalUrl = urlBase.replace('/0/', `/${reservationId}/`);
+    
+    let url = finalUrl + `?room_id=${roomId}`;
+    
+    if (confirm("Seçilen odaya atayarak rezervasyonu ONAYLAMAK istediğinizden emin misiniz?")) {
+        window.location.href = url;
+    }
+}
+
+
+/* --- Takvim JS (YAT KULÜBÜ SATIRI EKLENDİ) --- */
+let currentYear;
+let currentMonth;
+
+function renderCalendar(year, month) {
+    const monthNames = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"];
+    
+    document.getElementById('currentMonthYear').textContent = `${monthNames[month - 1]} ${year}`;
+    
+    const container = document.getElementById('roomCalendarContainer');
+    container.innerHTML = '<div class="alert alert-info" role="alert">Takvim verileri yükleniyor...</div>';
+    
+    const apiUrlBase = '{{ url_for("takvim_doluluk_oda_api", year=0, month=0) }}';
+    const apiUrl = apiUrlBase.replace('/0/0', `/${year}/${month}`);
+
+    fetch(apiUrl)
+        .then(response => response.json())
+        .then(data => {
+
+            if (data.error) {
+                container.innerHTML = `<div class="alert alert-danger" role="alert">Hata: ${data.error}</div>`;
+                return;
+            }
+
+            container.innerHTML = ''; 
+            
+            if (!data || data.length === 0) {
+                    container.innerHTML = '<div class="alert alert-warning" role="alert">Bu ay için veritabanında tanımlı oda bulunamadı veya takvim verisi gelmedi.</div>';
+                    return;
+            }
+
+            const daysInMonth = new Date(year, month, 0).getDate();
+            const dayHeaders = ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'];
+
+            let headerHtml = `<table class="table table-bordered table-sm table-fixed"><thead><tr><th style="width:150px;">Oda No / Tipi</th>`;
+            
+            for (let i = 1; i <= daysInMonth; i++) {
+                const date = new Date(year, month - 1, i);
+                const dayIndex = (date.getDay() + 6) % 7; // Pzt=0, Paz=6
+                const isWeekend = dayIndex >= 5;  
+                headerHtml += `<th class="text-center p-1 ${isWeekend ? 'bg-light-subtle' : ''}">${i}<br><small>${dayHeaders[dayIndex]}</small></th>`;
+            }
+            headerHtml += `</tr></thead><tbody>`;
+
+            let bodyHtml = '';
+            
+            data.forEach(roomData => {
+                bodyHtml += `<tr><td class="font-weight-bold">${roomData.oda}</td>`;
+                
+                roomData.gunler.forEach(day => {
+                    let bgColor = '';  
+                    let tooltipText = day.durum === 'dolu' ? `Rezervasyonlu: ${day.rez_id}` : 'Müsait';
+
+                    const dayDate = new Date(year, month - 1, day.gun);
+                    const dayIndex = (dayDate.getDay() + 6) % 7;
+                    
+                    if (day.durum === 'dolu') {
+                        bgColor = 'bg-danger';  
+                    } else {
+                        if (dayIndex >= 5) {
+                            bgColor = 'bg-light-subtle';
+                        }
+                    }
+                    
+                    bodyHtml += `<td class="text-center p-1 ${bgColor}" title="${tooltipText}"></td>`;
+                });
+                bodyHtml += `</tr>`;
+            });
+            
+            let footerHtml = `</tbody></table>`;
+
+            container.innerHTML = headerHtml + bodyHtml + footerHtml;
+
+        })
+        .catch(error => {
+            console.error('Takvim verisi çekilirken hata:', error);
+            container.innerHTML = `<div class="alert alert-danger" role="alert">Veri çekme hatası: Sunucuya erişilemiyor veya API hatası. (Konsolu kontrol edin)</div>`;
+        });
+}
+
+// Navigasyon Fonksiyonları (Mevcut)
+function changeMonth(delta) {
+    currentMonth += delta;
+    if (currentMonth > 12) {
+        currentMonth = 1;
+        currentYear++;
+    } else if (currentMonth < 1) {
+        currentMonth = 12;
+        currentYear--;
+    }
+    renderCalendar(currentYear, currentMonth);
+}
+
+// Sekme ve Başlangıçta çalıştırma (Mevcut)
+document.addEventListener('DOMContentLoaded', function() {
+    const today = new Date();
+    currentYear = today.getFullYear();
+    currentMonth = today.getMonth() + 1;
+
+    // Sekme değiştirildiğinde takvimi yükle
+    const calendarTab = document.getElementById('calendar-tab');
+    calendarTab.addEventListener('click', function() {
+        if (currentYear && currentMonth) { // Yükleme durumu kontrolü
+            renderCalendar(currentYear, currentMonth);
+        }
+    });
+
+    document.getElementById('prevMonth').addEventListener('click', () => changeMonth(-1));
+    document.getElementById('nextMonth').addEventListener('click', () => changeMonth(1));
+
+    // Başlangıçta aktif sekmeyi kontrol et
+    const activeTab = document.querySelector('.nav-tabs .nav-link.active');
+    if(activeTab && activeTab.getAttribute('href') === '#calendar') {
+        renderCalendar(currentYear, currentMonth);
+    }
+});
+</script>
+
+{% endblock content %}

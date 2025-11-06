@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="profil-container py-5">
+    <div class="container">
+
+        <div class="profil-header d-flex flex-wrap align-items-center mb-5 border-bottom pb-3">
+            <div class="profil-info">
+                <h1 id="welcome-message" class="display-5 mb-2">Merhaba, {{ current_user.username }}</h1>
+                
+                <p class="puan lead text-muted">Toplam Sadakat Puanınız: 
+                    <strong class="text-primary fs-4">{{ current_user.total_points }}</strong>
+                </p>
+                <div class="message-area mt-3">
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                        {% if messages %}
+                            {% for category, message in messages %}
+                                <div class="alert alert-{{ category.replace('message', 'info') }}">{{ message }}</div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+                </div>
+            </div>
+        </div>
+
+        <div class="profil-section mb-5">
+            <h3 class="border-bottom pb-2 mb-3">📝 Aktif Görevlerim</h3>
+            <div class="gorev-listesi row">
+                {% for task in tasks %}
+                <div class="col-lg-6 mb-4">
+                    <div class="gorev-card p-3 shadow-sm rounded border d-flex flex-column h-100 {{ 'bg-light-success' if task.completed else 'bg-white' }}">
+                        
+                        {# Düzeltme: task.name/title ve task.description/get('description') ile sözlük yapısına uyum sağlandı #}
+                        <h5 class="fw-bold">{{ task.title if task.title is defined else task.name if task.name is defined else 'Başlık Bulunamadı' }}</h5>
+                        
+                        {# Görev Açıklaması Eklendi #}
+                        {% set mission_description = task.description if task.description is defined else task.get('description', None) %}
+                        
+                        {% if mission_description %}
+                            <p class="text-muted small mb-3">{{ mission_description }}</p>
+                        {% endif %}
+                        
+                        <div class="task-actions mt-auto pt-2 d-flex justify-content-between align-items-center border-top">
+                            {% if task.completed %}
+                                <span class="badge bg-success py-2">✅ Tamamlandı</span>
+                            {% else %}
+                                <span class="badge bg-warning text-dark py-2">⏳ Devam Ediyor</span>
+                                
+                                <a 
+                                    href="{{ url_for('complete_mission', mission_id=task.mission_id) }}" 
+                                    class="btn btn-sm btn-primary" 
+                                >
+                                    Görevi Tamamla <span class="badge bg-light text-primary ms-1">+{{ task.points_reward if task.points_reward is defined else '?' }} Puan</span>
+                                </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <div class="col-12">
+                    <p class="alert alert-info text-center">Şu anda size özel tanımlanmış aktif bir göreviniz bulunmuyor.</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="profil-section mb-5">
+            <h3 class="border-bottom pb-2 mb-3">🎁 Özel Kampanyalarım (Ödül Pazarı)</h3>
+            <div class="odul-listesi row">
+                {% for reward in rewards %}
+                <div class="col-lg-6 mb-4">
+                    <div class="odul-card p-3 shadow-sm rounded border d-flex flex-column h-100 bg-white">
+                        <h4 class="text-info">{{ reward.title }}</h4>
+                        <p class="text-muted">{{ reward.description }}</p>
+                        
+                        <a href="{{ url_for('redeem_reward', reward_id=reward.id) }}" class="btn btn-sm btn-outline-success mt-auto">
+                            Talep Et ({{ reward.points_cost }} Puan)
+                        </a>
+                    </div>
+                </div>
+                {% else %}
+                <div class="col-12">
+                    <p class="alert alert-secondary text-center">Şu anda kullanabileceğiniz özel bir kampanya (ödül) bulunmuyor.</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+    </div>
+</section>
+
+<style>
+/* Font İçin (Google Fonts'u base.html'e eklemediyseniz, sistemdeki şık bir fontu kullanırız) */
+#welcome-message {
+    /* Başlık için modern, sans-serif bir font ailesi */
+    font-family: 'Georgia', serif; /* Şık ve klasik bir hava katabilir */
+    font-size: 2.5rem; /* Biraz küçültüldü */
+    font-weight: 700;
+    color: #333; /* Koyu renk */
+    letter-spacing: -0.5px; /* Daha kompakt görünüm */
+}
+
+.profil-info strong.fs-4 {
+    font-weight: 700;
+}
+
+/* Kart Stilini İyileştirme */
+.gorev-card, .odul-card {
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    border-left: 5px solid var(--bs-primary, #0d6efd); /* Sol tarafa tema renginde bir çizgi */
+}
+
+.gorev-card.bg-white:hover, .odul-card.bg-white:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+.gorev-card.bg-light-success {
+    border-left-color: var(--bs-success, #198754);
+    background-color: #e9f7eb !important; /* Hafif yeşil tonu */
+}
+
+/* Buton ve Badge Düzeni */
+.task-actions .badge {
+    font-size: 0.85rem;
+}
+
+.btn .badge {
+    background-color: transparent !important;
+    border: 1px solid currentColor;
+}
+</style>
+
+{% endblock %}

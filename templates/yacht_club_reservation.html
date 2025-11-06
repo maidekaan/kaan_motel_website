@@ -1,0 +1,194 @@
+{% extends "base.html" %}
+
+{% block title %}Yat Kulübü Rezervasyonu{% endblock %}
+
+{% block content %}
+
+<div class="container mt-4">
+    {# Flash Mesajları #}
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+</div>
+
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-10 col-md-12">
+            
+            <div class="card shadow-lg p-4 p-md-5 mb-5">
+                <h1 class="mb-4 card-title text-center text-primary">Kaan Motel Yat Kulübü Rezervasyon Talebi</h1>
+                
+                {# DETAYLI BİLGİLENDİRME KUTUSU #}
+                <div class="alert alert-info border-primary mb-4" role="alert">
+                    <h4 class="alert-heading">Önemli Bilgilendirme:</h4>
+                    <p>
+                        Yat Kulübü rezervasyon taleplerinizde, manuel olarak oda ataması yapılmasını beklemekteyiz. Aşağıdaki formla talep oluşturduğunuzda, yöneticilerimiz sizin için en uygun planlamayı yapacak ve size geri dönüş sağlayacaktır.
+                    </p>
+                    <hr>
+                    <p class="mb-0">Lütfen yukarıdaki bilgi kutusuna sizin belirlediğiniz detaylı metni ekleyiniz.</p>
+                </div>
+
+                {# YENİ: Fiyat Görüntüleme Alanı #}
+                <div class="alert alert-warning border-warning mb-4" role="alert">
+                    <h4 class="alert-heading">Toplam Tutar</h4>
+                    <p id="yc_price_display">Lütfen önce giriş ve çıkış tarihlerini seçiniz.</p>
+                </div>
+                
+                <form action="{{ url_for('yacht_club_submit') }}" method="POST" class="needs-validation" id="yachtClubForm" novalidate>
+                    
+                    <h4 class="mb-3 border-bottom pb-2 text-success">Talep Tarihleri</h4>
+                    
+                    <div class="form-row">
+                        <div class="form-group col-md-6">
+                            <label for="yc_check_in">Giriş Tarihi (Check-in)</label>
+                            <input type="date" class="form-control" id="yc_check_in" name="check_in" required>
+                            <div class="invalid-feedback">Lütfen bir giriş tarihi seçin.</div>
+                        </div>
+                        <div class="form-group col-md-6">
+                            <label for="yc_check_out">Çıkış Tarihi (Check-out)</label>
+                            <input type="date" class="form-control" id="yc_check_out" name="check_out" required>
+                            <div class="invalid-feedback">Lütfen bir çıkış tarihi seçin.</div>
+                        </div>
+                    </div>
+
+                    <h4 class="mt-4 mb-3 border-bottom pb-2 text-success">İletişim Bilgileriniz</h4>
+                    
+                    <div class="form-group">
+                        <label for="yc_guest_name">Ad Soyad</label>
+                        <input type="text" class="form-control" id="yc_guest_name" name="guest_name" required>
+                        <div class="invalid-feedback">Lütfen adınızı ve soyadınızı girin.</div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group col-md-6">
+                            <label for="yc_guest_email">E-posta</label>
+                            <input type="email" class="form-control" id="yc_guest_email" name="guest_email" required>
+                            <div class="invalid-feedback">Lütfen geçerli bir e-posta adresi girin.</div>
+                        </div>
+                        <div class="form-group col-md-6">
+                            <label for="yc_guest_phone">Telefon Numarası</label>
+                            <input type="tel" class="form-control" id="yc_guest_phone" name="guest_phone" placeholder="Örn: 5xx xxx xx xx" required>
+                            <div class="invalid-feedback">Lütfen telefon numaranızı girin.</div>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-success btn-lg btn-block mt-4">Yat Kulübü Rezervasyon Talebi Oluştur</button>
+                </form>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// --- YAT KULÜBÜ FİYAT HESAPLAMA VE TARİH KONTROLÜ ---
+
+// Flask'ten gelen sabit fiyatı alıyoruz. Eğer app.py'de tanımlı değilse hata verir.
+// Varsayılan olarak 5000 TL alıyorum, siz bunu mutlaka Flask üzerinden dinamik olarak geçirmelisiniz!
+const YACHT_PRICE_PER_DAY = {{ YACHT_CLUB_BASE_PRICE | default(20000.00) }}; 
+const priceDisplay = document.getElementById('yc_price_display');
+
+function updateYachtPriceDisplay() {
+    const checkInInput = document.getElementById('yc_check_in');
+    const checkOutInput = document.getElementById('yc_check_out');
+    const checkIn = checkInInput.value;
+    const checkOut = checkOutInput.value;
+
+    // Tarih Min/Max Kontrolü (Odaya benzer mantık)
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    checkInInput.min = today.toISOString().split('T')[0];
+
+
+    if (checkIn && checkOut) {
+        const startDate = new Date(checkIn);
+        const endDate = new Date(checkOut);
+        
+        // Check-out, check-in'den büyük olmalı
+        if (endDate <= startDate) {
+             priceDisplay.innerHTML = `<span class="text-danger">HATA: Çıkış tarihi, Giriş tarihinden sonra olmalıdır.</span>`;
+             checkOutInput.setCustomValidity("Çıkış tarihi, giriş tarihinden sonra olmalıdır.");
+             return;
+        }
+        checkOutInput.setCustomValidity(""); // Hata yoksa temizle
+
+        // Gün farkını hesapla (Check-out günü sayılmaz, sadece konaklama gün sayısı)
+        const diffTime = endDate.getTime() - startDate.getTime();
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+        
+        if (diffDays > 0) {
+            const totalPrice = diffDays * YACHT_PRICE_PER_DAY;
+            // TR formatında para birimi gösterimi
+            priceDisplay.innerHTML = `Konaklama: ${diffDays} gece. Toplam Tutar: ${totalPrice.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY', minimumFractionDigits: 2 })}**`;
+        } else {
+            priceDisplay.textContent = "Lütfen geçerli giriş/çıkış tarihleri seçin.";
+        }
+    } else {
+        priceDisplay.textContent = "Lütfen önce giriş ve çıkış tarihlerini seçiniz.";
+    }
+}
+
+// Tarih input'larına olay dinleyicileri ekle
+document.getElementById('yc_check_in').addEventListener('change', function() {
+    updateYachtPriceDisplay();
+    
+    // Giriş tarihi değişince çıkış tarihinin minimumunu ayarla
+    const checkInDate = this.value;
+    const checkOutInput = document.getElementById('yc_check_out');
+    if (checkInDate) {
+        const minCheckoutDate = new Date(checkInDate);
+        minCheckoutDate.setDate(minCheckoutDate.getDate() + 1);
+        
+        const yyyy = minCheckoutDate.getFullYear();
+        const mm = String(minCheckoutDate.getMonth() + 1).padStart(2, '0'); 
+        const dd = String(minCheckoutDate.getDate()).padStart(2, '0');
+        
+        checkOutInput.min = `${yyyy}-${mm}-${dd}`;
+        
+        // Eğer çıkış tarihi minimumdan küçük kalırsa (yani önceki seçilen çıkış tarihi geçersiz olursa)
+        if (checkOutInput.value && new Date(checkOutInput.value) < new Date(checkOutInput.min)) {
+             checkOutInput.value = checkOutInput.min;
+        }
+    }
+    updateYachtPriceDisplay(); // Fiyatı yeniden hesapla
+});
+
+document.getElementById('yc_check_out').addEventListener('change', updateYachtPriceDisplay);
+
+
+// Sayfa yüklendiğinde bir kez çalıştır
+document.addEventListener('DOMContentLoaded', updateYachtPriceDisplay);
+
+
+// Form Doğrulama (Bootstrap native validation)
+(function() {
+    'use strict';
+    const form = document.getElementById('yachtClubForm');
+    form.addEventListener('submit', function(event) {
+        // Tarih/fiyat kontrolünün geçerli olduğundan emin olalım
+        if (form.checkValidity() === false) {
+            event.preventDefault();
+            event.stopPropagation();
+        } 
+        
+        // Ekstra: Eğer fiyat hesaplanamadıysa (yani JS çalışmadıysa)
+        if (priceDisplay.textContent.includes("HATA")) {
+             event.preventDefault();
+             alert("Lütfen geçerli tarihler seçtiğinizden emin olun.");
+        }
+
+        form.classList.add('was-validated');
+    }, false);
+})();
+</script>
+
+{% endblock %}

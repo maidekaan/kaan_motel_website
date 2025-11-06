@@ -1,0 +1,5 @@
+name=Pet Dostu Oda
+description=Patili dostuyla tatil yapmak isteyen misafirlerimiz için özel olarak tasarlandı.
+long_description=Kaan Motel olarak, evcil hayvanlarıyla tatil yapmak isteyen misafirlerimiz için özel olarak hazırladığımız Pet Dostu Oda seçeneğimizde konforlu bir konaklama deneyimi sunuyoruz. Odamız, 4 kişilik kapasitesiyle hem aileler hem de dostlarıyla birlikte seyahat eden misafirlerimiz için idealdir. Evcil dostlarınız için özel mama kabı, yatak ve güvenli alan bulunmaktadır.
+price_per_night=1500
+capacity=4

@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+
+{% block head %}
+<!-- Swiper CSS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css"/>
+{% endblock %}
+
+{% block content %}
+<section class="section-title py-4 bg-light border-bottom">
+    <div class="container">
+        <h1 class="h3 mb-1 text-primary">{{ room.name }}</h1>
+        <p class="text-muted mb-3">{{ room.description }}</p>
+    </div>
+</section>
+
+<section class="room-detail py-5">
+    <div class="container">
+        <div class="row">
+
+            <!-- 🖼️ Görseller (Swiper ile) -->
+            <div class="col-lg-7 mb-4">
+                <h4 class="mb-3">Oda Fotoğrafları</h4>
+
+                {% if gallery_items %}
+                <!-- ✅ Swiper Container -->
+                <div class="swiper-container mySwiper shadow-lg border rounded-3 overflow-hidden">
+                    <div class="swiper-wrapper">
+                        {% for item in gallery_items %}
+                        <div class="swiper-slide">
+                            <img src="{{ item.path }}" alt="{{ item.title }}" class="img-fluid rounded w-100" style="object-fit: cover; height: 55vh;">
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <!-- Pagination & Navigation -->
+                    <div class="swiper-pagination"></div>
+                    <div class="swiper-button-prev"></div>
+                    <div class="swiper-button-next"></div>
+                </div>
+
+                {% else %}
+                    <div class="alert alert-warning mt-3">Bu odaya ait görsel bulunmamaktadır.</div>
+                {% endif %}
+            </div>
+
+            <!-- 📋 Oda Bilgileri -->
+            <div class="col-lg-5">
+                <h4 class="mb-3">Oda Hakkında Detaylı Bilgi</h4>
+                <div class="alert alert-info d-flex align-items-center mb-4">
+                    <i class="fas fa-users me-2"></i>
+                    Maksimum Kapasite: <span class="fw-bold ms-1">{{ room.capacity }} Kişi</span>
+                </div>
+
+                <p class="text-muted lead">{{ room.long_description }}</p>
+
+                <div class="mt-4 p-3 bg-white border rounded shadow-sm">
+                    <div class="d-flex justify-content-between align-items-center flex-wrap">
+                        <span class="fs-5 fw-bold text-dark mb-2">
+                            {{ "{:,.0f}".format(room.price_per_night) | replace(',', '.') }}
+                            <small class="text-muted">TL/Gece'den başlayan</small>
+                        </span>
+                        <a href="/rezervasyon?room_id={{ room.id }}" class="btn btn-lg btn-success">
+                            <i class="fas fa-check me-1"></i> Hemen Rezervasyon Yap
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<style>
+.swiper-container {
+    width: 100%;
+    height: auto;
+    border-radius: 12px;
+}
+.swiper-slide img {
+    width: 100%;
+    object-fit: cover;
+}
+.swiper-button-prev, .swiper-button-next {
+    color: #007bff;
+}
+.swiper-pagination-bullet-active {
+    background: #007bff;
+}
+@media (max-width: 768px) {
+    .swiper-slide img {
+        height: 35vh;
+    }
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<!-- Swiper JS -->
+<script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+<script>
+var swiper = new Swiper(".mySwiper", {
+    loop: true,
+    pagination: {
+        el: ".swiper-pagination",
+        clickable: true,
+    },
+    navigation: {
+        nextEl: ".swiper-button-next",
+        prevEl: ".swiper-button-prev",
+    },
+    autoplay: {
+        delay: 4000,
+        disableOnInteraction: false,
+    },
+});
+</script>
+{% endblock %}

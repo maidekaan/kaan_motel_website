@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="card">
+        <div class="card-header">
+            <h3 class="text-center">Kişisel Verilerin Korunması Kanunu (KVKK) Aydınlatma Metni</h3>
+        </div>
+        <div class="card-body">
+            {# app.py'den gelen KVKK_TEXT değişkenini burada gösteriyoruz #}
+            <p>{{ KVKK_TEXT | safe }}</p>
+        </div>
+        <div class="card-footer text-center">
+            <a href="{{ url_for('register') }}" class="btn btn-secondary">Kayıt Formuna Geri Dön</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

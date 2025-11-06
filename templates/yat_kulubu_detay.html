@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="section-title py-4 bg-light border-bottom">
+    <div class="container">
+        <h1 class="h3 mb-1">{{ data.title }}</h1>
+        <p class="text-muted mb-3">{{ data.description }}</p>
+    </div>
+</section>
+
+<section class="yat-klubu-detail py-5">
+    <div class="container">
+        <div class="row">
+            
+            <div class="col-lg-7 mb-4">
+                <h4 class="mb-3">Hizmetlerimiz</h4>
+            <div class="mt-4">
+                <a href="{{ url_for('etkinlik1') }}" class="btn btn-primary me-2">Etkinlik #1</a>
+                    <a href="{{ url_for('etkinlik2') }}" class="btn btn-secondary">Etkinlik #2</a>
+            </div>
+
+                
+                <p class="text-muted lead fs-5">{{ data.long_text }}</p>
+                
+                <div class="mt-5">
+                    <a href="{{ url_for('rezervasyon_formu') }}?kulup=yat" class="btn btn-lg btn-success">
+                        <i class="fas fa-ship me-1"></i> Hemen Tekne Turu Rezervasyonu
+                    </a>
+                </div>
+            </div>
+            
+            <div class="col-lg-5">
+                
+                
+                {% if data.gallery_images %}
+                
+                <div id="yatKulubuCarousel" class="carousel slide shadow-lg border rounded-3 overflow-hidden" 
+                     data-ride="carousel" data-interval="5000"> 
+                    
+                    <ol class="carousel-indicators">
+                        {% for item in data.gallery_images %}
+                        <li data-target="#yatKulubuCarousel" data-slide-to="{{ loop.index0 }}" 
+                            class="{% if loop.first %}active{% endif %}"></li>
+                        {% endfor %}
+                    </ol>
+                    
+                    <div class="carousel-inner">
+                        {% for item in data.gallery_images %}
+                        <div class="carousel-item {% if loop.first %}active{% endif %}">
+                            <img src="{{ item.path }}" class="d-block w-100 detail-carousel-image" alt="{{ item.title }}">
+                            <div class="carousel-caption d-none d-md-block" style="background: rgba(0,0,0,0.5); padding: 5px;">
+                                <h5>{{ item.title }}</h5>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    
+                    <a class="carousel-control-prev" href="#yatKulubuCarousel" role="button" data-slide="prev">
+                        <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                        <span class="sr-only">Önceki</span>
+                    </a>
+                    <a class="carousel-control-next" href="#yatKulubuCarousel" role="button" data-slide="next">
+                        <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                        <span class="sr-only">Sonraki</span>
+                    </a>
+                </div>
+
+                {% else %}
+                    <div class="alert alert-warning">Yat Kulübü için görsel bulunamadı. Lütfen `static/rooms/yat_kulubu/` klasörünü kontrol edin.</div>
+                {% endif %}
+                
+            </div>
+            
+        </div>
+    </div>
+</section>
+
+<style>
+/* Görsel boyutunu küçültmek için yeni stil */
+.detail-carousel-image {
+    height: 50vh; /* Daha küçük ve dengeli bir yükseklik */
+    object-fit: cover; 
+    width: 100%;
+    background-color: #f8f9fa; 
+}
+</style>
+<style>
+/* Görsel boyutunu küçültmek için yeni stil */
+.detail-carousel-image {
+    height: 50vh;
+    object-fit: cover; 
+    width: 100%;
+    background-color: #f8f9fa; 
+}
+
+/* Carousel başlıklarını (görsel adlarını) gizle */
+.carousel-caption h5 {
+    display: none;
+}
+</style>
+
+
+{% endblock %}
+
+{% block scripts %}
+{% endblock %}

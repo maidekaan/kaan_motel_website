@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% set title = "Kaan Motel - Avşa Adası'nda Huzurlu Kaçış" %}
+
+{% block content %}
+
+    <section class="hero-section" style="background-image: url('{{ url_for('static', filename='images/hero_placeholder.jpg') }}');">
+        <div class="hero-overlay">
+            <div class="container">
+                <h2>{{ slogan }}</h2>
+                <p>Doğallık ve sakinliğin buluşma noktası. Kendinizi yenilemek için mükemmel bir ortam.</p>
+                
+                {# WHATSAPP REZERVASYON BUTONU - SADECE WHATSAPP'A YÖNLENDİRİR #}
+                <a href="https://wa.me/905538898544?text=Merhaba%20Kaan%20Motel,%20rezervasyon%20yapmak%20istiyorum." 
+                   target="_blank" 
+                   class="btn-lg btn-rezervasyon"
+                   onclick="event.stopPropagation(); window.open(this.href, '_blank'); return false;">
+                    <i class="fab fa-whatsapp"></i> İletişime Geç
+                </a>
+                
+            </div>
+        </div>
+    </section>
+
+    <section class="about-section">
+        <div class="container">
+            <div class="about-content">
+                <h3>Sakinliğe Hoş Geldiniz!</h3>
+                <p>Kaan Motel, Avşa Adası'nın deniz kenarında, yemyeşil bahçesi içinde, gürültüden uzak ve samimi bir konaklama deneyimi sunar. Lüksün karmaşası yerine, **doğallığı ve sakinliği** ön planda tutan konseptimizle kendinizi evinizde gibi hissedeceksiniz. Biz sadece bir motel değil, huzurunuzun başladığı yeriz.</p>
+                <p>İster özel bahçemizde kitabınızı okuyun, ister hemen önümüzdeki denizin tadını çıkarın. Bizimle geçireceğiniz her an, bir sonraki tatilinizin başlangıcı olacak.</p>
+                
+                {# ODALARA GİDEN BUTON #}
+                <a href="{{ url_for('odalar') }}" class="btn-secondary">Odaları Keşfet</a>
+                
+            </div>
+            <div class="about-image">
+                <img src="{{ url_for('static', filename='images/about_placeholder.jpg') }}" alt="Kaan Motel Bahçe Manzarası">
+            </div>
+        </div>
+    </section>
+
+    <section class="services-preview">
+        <div class="container">
+            <h3>Sizi Neler Bekliyor?</h3>
+            <div class="service-cards">
+                <div class="card">
+                    <span class="icon">🌿</span>
+                    <h4>Yemyeşil Bahçe</h4>
+                    <p>Avşa'da nadir bulunan, size özel geniş ve huzurlu bir bahçe keyfi.</p>
+                </div>
+                <div class="card">
+                    <span class="icon">🐾</span>
+                    <h4>Pet Dostu Konaklama</h4>
+                    <p>Patili dostlarınızı da ağırlamaktan mutluluk duyuyoruz. Özel odamızı keşfedin!</p>
+                </div>
+                <div class="card">
+                    <span class="icon">🌊</span>
+                    <h4>Denize 30 metre Mesafe</h4>
+                    <p>Deniz hemen kapınızın önünde. Sadece birkaç adımda masmavi sulara ulaşın.</p>
+                </div>
+                <div class="card">
+                    <span class="icon">🏠</span>
+                    <h4>Samimi Atmosfer</h4>
+                    <p>Büyük otel karmaşası yok; sadece sıcak ve kişiselleştirilmiş bir misafirperverlik.</p>
+                </p>
+            </div>
+        </div>
+    </section>
+    
+{% endblock %}

@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container my-5">
+    <h1 class="text-center mb-4">Kullanıcı Adını Hatırlatma</h1>
+    <p class="text-center mb-4">Kayıtlı e-posta adresini girerek kullanıcı adını öğrenebilirsin.</p>
+    
+    <form method="POST" class="mx-auto" style="max-width: 400px;">
+        <div class="mb-3">
+            <label for="email" class="form-label">E-posta</label>
+            <input type="email" class="form-control" id="email" name="email" placeholder="E-posta adresinizi girin" required>
+        </div>
+        <button type="submit" class="btn btn-primary w-100">Kullanıcı Adını Gönder</button>
+    </form>
+</div>
+{% endblock %}

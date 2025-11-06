@@ -1,0 +1,855 @@
+/* --- 1. RENK PALETİ VE TEMEL AYARLAR (GÜNCELLENDİ) --- */
+:root {
+    /* Butik Konseptine Uygun Yumuşak Tonlar */
+    --color-primary: #85A3B2;      /* Dumanlı Deniz Mavisi (Ana Vurgu) */
+    --color-accent: #9BB78C;       /* Yumuşak Ada Yeşili (İkincil Vurgu/Logo) */
+    --color-light-bg: #F9F7F3;     /* Açık Krem/Bej (Arka Plan) */
+    --color-dark: #3D405B;         /* Koyu Lacivert/Gri (Metin) */
+    --color-text-light: #70798C;   /* Yumuşak Gri Metin */
+    --color-white: #ffffff;
+    
+    --shadow-subtle: 0 4px 12px rgba(0, 0, 0, 0.05); /* Yumuşak, Butik Gölge */
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    /* Başlıklar için daha hafif, metinler için daha okunaklı font */
+    font-family: 'Open Sans', sans-serif;
+    line-height: 1.7; /* Okunabilirliği artırmak için hafifçe yükseltildi */
+    color: var(--color-dark);
+    background-color: var(--color-light-bg);
+    font-size: 16px;
+}
+
+.container {
+    width: 90%;
+    max-width: 1200px; /* Biraz daha geniş bir alan */
+    margin: 0 auto;
+}
+
+h1, h2, h3, h4 {
+    margin-bottom: 15px;
+    font-weight: 300; /* Başlıkları daha zarif hale getirir */
+    color: var(--color-dark);
+}
+h2 {
+    font-size: 2em;
+}
+
+a {
+    text-decoration: none;
+    color: var(--color-dark);
+    transition: color 0.3s;
+}
+
+a:hover {
+    color: var(--color-primary); /* Hover rengi değiştirildi */
+}
+
+/* --- 2. BUTONLAR (GÜNCELLENDİ) --- */
+.btn-primary, .btn-secondary, .btn-lg, .nav-button {
+    display: inline-block;
+    padding: 10px 20px;
+    border-radius: 6px; /* Daha yumuşak köşeler */
+    font-weight: 600;
+    text-align: center;
+    transition: background-color 0.3s, transform 0.2s, box-shadow 0.3s;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-size: 0.9em;
+}
+
+/* Ana Butonlar (Rezervasyon butonu) */
+.btn-primary, .btn-rezervasyon {
+    background-color: var(--color-primary); 
+    color: var(--color-white);
+    border: 2px solid var(--color-primary);
+    box-shadow: 0 5px 10px rgba(0, 0, 0, 0.1); /* Hafif gölge */
+}
+
+.btn-primary:hover, .btn-rezervasyon:hover {
+    background-color: var(--color-accent); 
+    border-color: var(--color-accent);
+    color: var(--color-dark);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.15);
+}
+
+.btn-secondary {
+    background-color: transparent;
+    border: 2px solid var(--color-accent);
+    color: var(--color-accent);
+}
+
+.btn-secondary:hover {
+    background-color: var(--color-accent);
+    color: var(--color-dark);
+}
+
+.btn-lg {
+    padding: 15px 35px;
+    font-size: 1em;
+}
+
+
+/* --- 3. NAVİGASYON VE ALT BİLGİ (GÜNCELLENDİ) --- */
+header {
+    background-color: var(--color-white);
+    box-shadow: var(--shadow-subtle);
+    padding: 15px 0;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+}
+
+.nav-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.logo a {
+    font-size: 1.8em; /* Logo biraz büyütüldü */
+    font-weight: 400; /* Daha zarif bir ağırlık */
+    color: var(--color-accent);
+    letter-spacing: 1px;
+}
+
+nav ul {
+    list-style: none;
+    display: flex;
+    align-items: center; /* Butonların hizalanması için */
+}
+
+nav ul li {
+    margin-left: 15px; /* Daha az boşluk */
+}
+
+/* Tüm Navigasyon Linklerini Minimal Butonlaştırma */
+nav ul li a {
+    padding: 8px 12px; /* Butonsu padding */
+    display: block;
+    color: var(--color-dark);
+    font-size: 0.9em;
+    border: 1px solid transparent; /* Varsayılan şeffaf çerçeve */
+    border-radius: 4px;
+    transition: all 0.3s;
+}
+
+nav ul li a:not(.btn-rezervasyon):hover {
+    color: var(--color-primary);
+    border-color: var(--color-primary); /* Hover'da çerçeve rengi belirir */
+    background-color: rgba(133, 163, 178, 0.05); /* Çok hafif arka plan */
+    border-bottom: 1px solid var(--color-primary); /* Eski alt çizgi yerine */
+}
+
+/* Rezervasyon butonu için özel ayarlama */
+.btn-rezervasyon {
+    margin-left: 10px; /* Diğerlerinden ayırmak için */
+    padding: 10px 20px;
+}
+
+
+footer {
+    background-color: var(--color-dark);
+    color: var(--color-light-bg);
+    text-align: center;
+    padding: 40px 0; /* Hafifçe artırıldı */
+    font-size: 0.85em;
+}
+
+.sadakat-hazirlik {
+    margin-top: 10px;
+    color: var(--color-accent);
+    font-weight: 600;
+}
+
+/* --- 4. ANA SAYFA BÖLÜMLERİ (GÜNCELLENDİ) --- */
+
+/* Hero Section */
+.hero-section {
+    height: 90vh; /* Daha etkileyici bir yükseklik */
+    background-size: cover;
+    background-position: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    color: var(--color-white);
+}
+
+.hero-overlay {
+    /* Daha butik ve şeffaf bir katman */
+    background-color: rgba(61, 64, 91, 0.5); /* Koyu metin renginin şeffafı */
+    backdrop-filter: blur(1px); /* Hafif bir bulanıklık efekti */
+    padding: 60px;
+    border-radius: 10px;
+}
+
+.hero-section h2 {
+    font-size: 3em;
+    margin-bottom: 10px;
+    font-weight: 300;
+    color: var(--color-white); /* Başlık rengi beyaz yapıldı */
+}
+
+.hero-section p {
+    font-size: 1.3em;
+    margin-bottom: 30px;
+    font-weight: 300;
+}
+
+/* About Section */
+.about-section {
+    padding: 80px 0; /* Daha ferah boşluk */
+    background-color: var(--color-white);
+}
+
+.about-section .container {
+    display: flex;
+    align-items: flex-start; /* Metin yukarıdan başlasın */
+    gap: 60px;
+}
+
+.about-content {
+    flex: 2;
+    padding-right: 0;
+}
+
+.about-image {
+    flex: 1;
+    max-width: 500px;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.about-image img {
+    width: 100%;
+    height: auto;
+    display: block;
+    box-shadow: var(--shadow-subtle);
+}
+
+/* Services Preview */
+.services-preview {
+    padding: 80px 0;
+    text-align: center;
+    background-color: var(--color-light-bg);
+}
+
+.services-preview h3 {
+    margin-bottom: 50px;
+    color: var(--color-primary);
+}
+
+.service-cards {
+    display: flex;
+    justify-content: space-between;
+    gap: 30px; /* Boşluk artırıldı */
+}
+
+.service-cards .card {
+    background-color: var(--color-white);
+    padding: 40px;
+    border-radius: 10px; /* Köşeler yumuşatıldı */
+    flex: 1;
+    box-shadow: var(--shadow-subtle);
+}
+
+.service-cards .icon {
+    font-size: 2.5em; /* İkonlar büyütüldü */
+    color: var(--color-accent);
+    display: block;
+    margin-bottom: 15px;
+}
+
+/* --- 5. ODALAR SAYFASI BÖLÜMLERİ --- */
+
+.section-title {
+    padding: 80px 0 30px;
+    text-align: center;
+    background-color: var(--color-light-bg); 
+}
+
+.rooms-list {
+    padding: 40px 0;
+}
+
+.room-card {
+    display: flex;
+    align-items: center;
+    margin-bottom: 60px; /* Aradaki boşluk artırıldı */
+    background-color: var(--color-white);
+    box-shadow: var(--shadow-subtle);
+    border-radius: 10px; 
+    overflow: hidden;
+    flex-direction: row; 
+    transition: transform 0.3s ease;
+}
+
+.room-card:hover {
+    transform: translateY(-5px); /* Kartın hafifçe yükselmesi */
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
+}
+
+.room-card:nth-child(even) {
+    flex-direction: row-reverse;
+}
+
+.room-image {
+    flex: 1.2; /* Görsel alanına daha fazla yer */
+    min-width: 45%;
+    height: 350px; 
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.room-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover; /* Görselin alanı tamamen kaplaması için cover yapıldı */
+    transition: transform 0.5s ease;
+}
+
+.room-image img:hover {
+    transform: scale(1.05); /* Hover'da görsel daha çok zoom yapsın */
+}
+
+.room-details {
+    flex: 1;
+    padding: 40px;
+}
+
+.room-details h3 {
+    color: var(--color-dark); /* Oda adı rengi koyu yapıldı */
+    font-weight: 400;
+    margin-bottom: 5px;
+}
+
+.room-details h4 {
+    font-style: italic;
+    color: var(--color-accent); /* Vurgu daha belirgin yeşil */
+    font-weight: 300;
+    margin-bottom: 25px;
+}
+
+.features-list {
+    list-style: none;
+    padding: 0;
+    margin-bottom: 30px;
+}
+
+.features-list li {
+    padding: 8px 0; /* Padding artırıldı */
+    font-size: 0.95em;
+    color: var(--color-text-light);
+    border-bottom: 1px dashed #eee; /* Daha zarif bir ayırıcı */
+}
+
+.features-list li:last-child {
+    border-bottom: none;
+}
+
+.pet-info {
+    color: #b71c1c; /* Daha kırmızı bir ton */
+    font-weight: 600;
+    margin-top: 15px;
+    padding: 12px;
+    background-color: #fce4e4;
+    border-radius: 6px;
+}
+
+/* --- 6. KONUM VE İLETİŞİM SAYFASI STİLLERİ --- */
+
+.contact-details {
+    padding: 60px 0;
+    background-color: var(--color-light-bg);
+}
+
+.contact-grid {
+    display: flex;
+    gap: 40px;
+}
+
+.info-card, .form-card {
+    flex: 1;
+    padding: 40px;
+    background-color: var(--color-white);
+    border-radius: 10px;
+    box-shadow: var(--shadow-subtle);
+}
+
+.info-card h2, .form-card h2 {
+    color: var(--color-primary); /* Başlık rengi ana vurgu */
+    margin-bottom: 25px;
+    border-bottom: 1px solid var(--color-accent);
+    padding-bottom: 10px;
+    font-weight: 400;
+}
+
+.info-card p {
+    margin-bottom: 15px;
+    line-height: 1.6;
+}
+
+.contact-form input[type="text"],
+.contact-form input[type="email"],
+.contact-form textarea {
+    width: 100%;
+    padding: 12px;
+    margin-bottom: 15px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 1em;
+    transition: border-color 0.3s;
+}
+
+.contact-form input:focus, .contact-form textarea:focus {
+    border-color: var(--color-primary); /* Focus rengi vurgulandı */
+    outline: none;
+}
+
+/* Harita Bölümü */
+.map-section {
+    padding: 0 0 80px 0;
+}
+
+.map-section h2 {
+    text-align: center;
+    margin-bottom: 30px;
+    color: var(--color-dark);
+}
+
+.map-container {
+    height: 500px; /* Harita büyütüldü */
+    overflow: hidden;
+    border-radius: 10px;
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
+}
+
+/* --- 7. REZERVASYON FORMU STİLLERİ --- */
+.reservation-form-section {
+    padding: 40px 0 80px;
+}
+
+.reservation-form {
+    background-color: var(--color-white);
+    padding: 50px;
+    border-radius: 10px;
+    box-shadow: var(--shadow-subtle);
+    max-width: 800px; /* Form genişletildi */
+    margin: 0 auto;
+}
+
+.reservation-form h2 {
+    color: var(--color-primary);
+    border-bottom: 1px solid var(--color-accent);
+    padding-bottom: 10px;
+    margin-top: 0;
+    margin-bottom: 30px;
+    font-weight: 400;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: var(--color-dark); /* Label rengi koyu yapıldı */
+}
+
+.reservation-form input[type="date"],
+.reservation-form input[type="number"],
+.reservation-form input[type="text"],
+.reservation-form input[type="email"],
+.reservation-form input[type="tel"],
+.reservation-form select {
+    width: 100%;
+    padding: 14px; /* Form alanları büyütüldü */
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 1em;
+    font-family: inherit;
+    transition: border-color 0.3s;
+}
+.reservation-form input:focus, .reservation-form select:focus {
+    border-color: var(--color-primary);
+    outline: none;
+}
+
+
+/* Form Alanları Yan Yana Düzenleme */
+.form-row {
+    display: flex;
+    gap: 4%;
+    margin-bottom: 20px;
+}
+.form-row .form-group {
+    flex: 1;
+    margin-bottom: 0;
+}
+
+/* Mesajlar (Flash Messages) - Daha şık ve yumuşak */
+.flash-message {
+    padding: 15px 25px;
+    margin-top: 30px;
+    border-radius: 6px;
+    font-weight: 500;
+    max-width: 800px;
+    margin-left: auto;
+    margin-right: auto;
+    border: 1px solid;
+    font-size: 0.95em;
+}
+.flash-success {
+    background-color: #e8f5e9; /* Çok açık yeşil */
+    color: #388e3c; /* Koyu yeşil metin */
+    border-color: #c8e6c9;
+}
+.flash-danger {
+    background-color: #ffebee; /* Çok açık kırmızı */
+    color: #d32f2f; /* Koyu kırmızı metin */
+    border-color: #ffcdd2;
+}
+
+
+/* --- 8. MOBİL UYUMLULUK (GÜNCELLENDİ) --- */
+@media (max-width: 992px) {
+    /* Büyük tabletler için ek breakpoint */
+    .about-section .container {
+        gap: 30px;
+    }
+    .room-card {
+        margin-bottom: 40px;
+    }
+    .room-image {
+        min-width: 40%;
+        height: 300px; 
+    }
+    
+    /* Rezervasyon formunda yan yana duran elemanları küçültme */
+    .form-row {
+        flex-wrap: wrap;
+    }
+    .form-row .form-group {
+        width: 48%;
+        flex: unset;
+    }
+}
+
+
+@media (max-width: 768px) {
+    /* Tam mobil görünüm */
+    .nav-content {
+        flex-direction: column;
+        text-align: center;
+    }
+    nav ul {
+        flex-direction: column;
+        margin-top: 10px;
+    }
+    nav ul li {
+        margin: 5px 0;
+    }
+    nav ul li a:not(.btn-rezervasyon) {
+        border: none; /* Mobilde sadeleşir */
+    }
+    
+    /* Hero */
+    .hero-overlay {
+        padding: 40px;
+    }
+    .hero-section h2 {
+        font-size: 2.2em;
+    }
+
+    /* Ana Sayfa Hakkında Bölümü */
+    .about-section .container {
+        flex-direction: column;
+        gap: 20px;
+    }
+    .about-content, .about-image {
+        padding: 0;
+        max-width: 100%;
+        text-align: center;
+    }
+    .about-image {
+        margin-top: 20px;
+    }
+
+    /* Hizmet Kartları Alt Alta Gelsin */
+    .service-cards {
+        flex-direction: column;
+    }
+    .service-cards .card {
+        margin-bottom: 15px;
+    }
+
+    /* Odalar Sayfası ve İletişim Sayfası */
+    .room-card {
+        flex-direction: column !important; 
+        margin-bottom: 30px;
+    }
+    .room-image, .room-details {
+        min-width: 100%;
+        height: 250px;
+    }
+    .room-details {
+        padding: 25px;
+    }
+    
+    .contact-grid {
+        flex-direction: column;
+    }
+    .map-container {
+        height: 300px; 
+    }
+
+    /* Form Düzenlemeleri */
+    .form-row .form-group {
+        width: 100%;
+        margin-bottom: 15px;
+    }
+    .form-row {
+        gap: 0;
+        margin-bottom: 0;
+    }
+    .reservation-form {
+        padding: 25px;
+    }
+}
+/* --- 9. PROFİL / SADAKAT PANELİ STİLLERİ --- */
+.profile-container {
+    padding: 50px 0;
+    background-color: var(--color-light-bg);
+}
+
+.profile-container h1 {
+    text-align: center;
+    margin-bottom: 40px;
+    color: var(--color-primary);
+    font-weight: 400;
+}
+
+.profile-points {
+    text-align: center;
+    padding: 20px;
+    background-color: var(--color-accent);
+    color: var(--color-white);
+    border-radius: 10px;
+    font-size: 1.3em;
+    font-weight: 600;
+    box-shadow: var(--shadow-subtle);
+    margin-bottom: 50px;
+}
+
+.section-title {
+    border-bottom: 2px solid var(--color-accent);
+    padding-bottom: 10px;
+    margin-bottom: 30px;
+    font-weight: 400;
+    color: var(--color-dark);
+}
+
+.missions-row, .rewards-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+}
+
+.missions-card, .reward-card {
+    background-color: var(--color-white);
+    flex: 1 1 calc(50% - 20px);
+    padding: 25px;
+    border-radius: 10px;
+    box-shadow: var(--shadow-subtle);
+    transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.missions-card:hover, .reward-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+}
+
+.missions-card h5, .reward-card h5 {
+    font-weight: 600;
+    margin-bottom: 10px;
+    color: var(--color-dark);
+}
+
+.missions-card p, .reward-card p {
+    color: var(--color-text-light);
+    margin-bottom: 10px;
+}
+
+.points-label {
+    font-weight: 700;
+    color: var(--color-primary);
+    margin-bottom: 15px;
+}
+
+.button-row {
+    margin-top: 15px;
+}
+
+.button-row button {
+    border-radius: 6px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.button-disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* Talep geçmişi */
+.redemptions-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.redemptions-list li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: var(--color-white);
+    padding: 15px 20px;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    box-shadow: var(--shadow-subtle);
+    font-size: 0.95em;
+}
+
+.redemptions-list li .badge {
+    padding: 5px 10px;
+    border-radius: 6px;
+    font-weight: 600;
+}
+
+/* Mobil uyumluluk */
+@media (max-width: 768px) {
+    .missions-card, .reward-card {
+        flex: 1 1 100%;
+    }
+}
+/* YAPILMASI GEREKEN ÖNERİLEN CSS EKLENTİLERİ */
+.puan-odulu {
+    background-color: #007bff;
+    color: white;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.85em;
+    margin-left: 10px;
+    font-weight: bold;
+}
+
+.gorev-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    background-color: #fff;
+    transition: all 0.3s;
+}
+
+.gorev-card:hover {
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+}
+
+.gorev-card.tamamlandi {
+    border-left: 5px solid #28a745; /* Yeşil çizgi */
+    opacity: 0.8;
+}
+
+.gorev-bilgi {
+    flex-grow: 1;
+}
+.gorev-aksiyon {
+    text-align: right;
+}
+
+.btn-tamamla {
+    background-color: #28a745;
+    color: white;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.btn-tamamla:hover {
+    background-color: #218838;
+}
+
+.gorev-durum {
+    padding: 5px 10px;
+    border-radius: 5px;
+    font-size: 0.9em;
+    font-weight: bold;
+}
+
+.gorev-durum.tamamlandi {
+    background-color: #28a745;
+    color: white;
+}
+
+.gorev-durum.bekliyor {
+    background-color: #ffc107;
+    color: #333;
+}
+/* GÖREV KARTI HİZALAMASINI GARANTİ ALTINA ALMA */
+.gorev-card {
+    /* Daha önce tanımlıydı, sadece emin olmak için */
+    display: flex; 
+    justify-content: space-between;
+    align-items: center;
+    /* ... diğer stiller ... */
+}
+
+/* Görev bilgisi alanı genişliği kaplasın */
+.gorev-bilgi {
+    flex-grow: 1; 
+    /* Sağa boşluk vererek butonla arasını açar */
+    padding-right: 20px; 
+}
+
+/* Buton ve durum alanının sağa hizalanması */
+.gorev-aksiyon {
+    text-align: right;
+    /* İçerik dar olduğunda kırılmaması için */
+    white-space: nowrap; 
+}
+.navbar .nav-link {
+    font-size: 1rem;   /* Varsayılan ~0.9rem idi */
+    font-weight: 600;    /* Daha belirgin hale getirir */
+    padding: 0.6rem 1rem; /* Daha ferah görünüm */
+}
+#kampanya-panel {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    animation: fadeIn 0.5s ease forwards;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+

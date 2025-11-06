@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title | default('Kaan Motel - Avşa Adası') }}</title>
+
+    <!-- ✅ SEO Meta Etiketleri -->
+    <meta name="description" content="Kaan Motel - Avşa Adası’nda huzurlu bir tatil deneyimi. Denize sıfır konum, konforlu odalar, yat kulübü etkinlikleri ve evcil hayvan dostu seçenekler.">
+    <meta name="keywords" content="Kaan Motel, Avşa Adası, otel, tatil, konaklama, denize sıfır otel, yat kulübü, Avşa otel, evcil hayvan dostu otel">
+    <meta name="author" content="Kaan Motel">
+    <meta name="robots" content="index, follow">
+    <meta name="language" content="Turkish">
+
+    <!-- ✅ Open Graph (Sosyal Medya) -->
+    <meta property="og:title" content="Kaan Motel - Avşa Adası'nda Huzurlu Kaçış Noktanız">
+    <meta property="og:description" content="Avşa Adası’nda denize sıfır konumu, yat kulübü ve konforlu odalarıyla unutulmaz bir tatil.">
+    <meta property="og:image" content="{{ url_for('static', filename='kaan_logo.png', _external=True) }}">
+    <meta property="og:url" content="{{ request.url_root }}">
+    <meta property="og:type" content="website">
+
+    <!-- ✅ Favicon -->
+    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
+
+    <!-- ✅ Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400..700&family=Open+Sans:wght@300;400;600&family=Playfair+Display:wght@400;600&display=swap" rel="stylesheet">
+
+    <!-- ✅ Bootstrap -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+
+    <!-- ✅ Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+
+    <!-- ✅ Swiper -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@10/swiper-bundle.min.css"/>
+
+    <!-- ✅ Özel CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
+    {% block head %}{% endblock %}
+</head>
+<body>
+
+<!-- ✅ Kampanya Paneli -->
+<div id="kampanyaPanel" class="position-fixed top-50 start-50 translate-middle bg-warning p-4 rounded shadow-lg" style="z-index: 1050; max-width: 400px; display: none;">
+    <div class="d-flex justify-content-between align-items-start">
+        <h5 class="mb-2">Kampanya!</h5>
+        <button type="button" class="btn-close" aria-label="Kapat" onclick="document.getElementById('kampanyaPanel').style.display='none';"></button>
+    </div>
+    <p class="mb-0">Sitemize özel fırsatları kaçırmayın! Hemen rezervasyon yapın ve avantajlardan yararlanın.</p>
+</div>
+
+<!-- ✅ Mobil uyumlu NAVBAR -->
+<nav class="navbar navbar-expand-lg navbar-light bg-light py-4 shadow-sm">
+    <div class="container">
+
+        <!-- LOGO -->
+        <a class="navbar-brand d-flex align-items-center" href="{{ url_for('index') }}">
+            <img src="{{ url_for('static', filename='kaan_logo.png') }}"
+                 alt="Kaan Motel Logo"
+                 width="150"
+                 height="150"
+                 class="rounded-circle mr-2 border">
+            <div class="d-flex flex-column">
+                <span style="font-family: 'Dancing Script', cursive; font-size: 2.8rem; font-weight: 700;">Kaan Motel</span>
+                <small class="text-muted" style="font-size: 0.8rem;">Avşa Adası'nda Huzurlu Kaçış Noktanız</small>
+            </div>
+        </a>
+
+        <!-- Hamburger Menü -->
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav"
+                aria-controls="navbarNav" aria-expanded="false" aria-label="Menüyü Aç">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <!-- Menü Linkleri -->
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ml-auto align-items-lg-center text-center">
+                <li class="nav-item"><a class="nav-link" href="{{ url_for('odalar') }}">Odalar</a></li>
+                <li class="nav-item"><a class="nav-link" href="{{ url_for('galeri') }}">Galeri</a></li>
+                <li class="nav-item"><a class="nav-link" href="{{ url_for('konum_iletisim') }}">Konum & İletişim</a></li>
+                <li class="nav-item"><a class="nav-link" href="{{ url_for('ada_rehberi') }}">Ada Rehberi</a></li>
+
+                <li class="nav-item mt-2 mt-lg-0">
+                    <a class="btn btn-outline-primary btn-lg px-5 py-2 fw-bold shadow-sm" 
+                       href="{{ url_for('yat_klubu') }}" 
+                       style="font-size: 1rem; letter-spacing: 0.2px;">
+                        <i class="fas fa-ship mr-1"></i> Yat Kulübü
+                    </a>
+                </li>
+
+                <li class="nav-item mt-2 mt-lg-0 ml-lg-2">
+                    <a class="btn btn-primary btn-sm text-white px-3" href="{{ url_for('rezervasyon_formu') }}">
+                        Rezervasyon Yap
+                    </a>
+                </li>
+
+                {% if current_user.is_authenticated %}
+                    {% if current_user.is_admin %}
+                        <li class="nav-item"><a class="nav-link" href="{{ url_for('admin_dashboard') }}">Yönetici Paneli</a></li>
+                    {% else %}
+                        <li class="nav-item"><a class="nav-link" href="{{ url_for('profil') }}">Profilim</a></li>
+                    {% endif %}
+                    <li class="nav-item"><a class="nav-link" href="{{ url_for('logout') }}">Çıkış Yap</a></li>
+                {% else %}
+                    <li class="nav-item"><a class="nav-link" href="{{ url_for('login') }}">Giriş Yap</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ url_for('register') }}">Kayıt Ol</a></li>
+                {% endif %}
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<!-- SAYFA İÇERİĞİ -->
+<main class="site-main">
+    {% block content %}{% endblock %}
+</main>
+
+<!-- FOOTER -->
+<footer class="site-footer py-4 mt-5 bg-light">
+    <div class="container text-center">
+        <p class="mb-1">&copy; 2025 Kaan Motel. Tüm hakları saklıdır. | Avşa Adası</p>
+        <small class="text-primary">Fırsatlardan yararlanmak için üye olmayı unutmayın!</small>
+    </div>
+</footer>
+
+<!-- ✅ JS -->
+<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+<!-- ✅ Swiper JS -->
+<script src="https://cdn.jsdelivr.net/npm/swiper@10/swiper-bundle.min.js"></script>
+
+<!-- ✅ Kampanya Panelini Göster -->
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const panel = document.getElementById('kampanyaPanel');
+    panel.style.display = 'block';
+});
+</script>
+
+{% block scripts %}{% endblock %}
+</body>
+</html>

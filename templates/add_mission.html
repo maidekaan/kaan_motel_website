@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="section-title">
+    <div class="container">
+        <h1>Yeni Görev Ekle</h1>
+        <p>Sadakat sistemi için yeni bir görev oluşturun.</p>
+        <a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary mt-2">← Yönetici Paneline Dön</a>
+
+        <div class="message-area" style="margin-top: 20px;">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        {# Bootstrap uyumlu mesaj sınıfları #}
+                        <div class="alert alert-{{ 'success' if category == 'success' else ('danger' if category == 'danger' else 'warning') }} flash-message" role="alert">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+        </div>
+    </div>
+</section>
+
+<section class="form-section py-4">
+    <div class="container">
+        <div class="card shadow-sm">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Görev Bilgileri</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="form-group mb-3">
+                        <label for="title" class="form-label">Görev Başlığı</label>
+                        <input type="text" class="form-control" id="title" name="title" placeholder="Örn: İlk Rezervasyonunuzu Yapın" required>
+                    </div>
+
+                    <div class="form-group mb-3">
+                        <label for="description" class="form-label">Açıklama</label>
+                        <textarea class="form-control" id="description" name="description" rows="4" placeholder="Görevin detaylı açıklaması, nasıl tamamlanacağı..." required></textarea>
+                    </div>
+
+                    <div class="form-group mb-3">
+                        <label for="points_reward" class="form-label">Kazanılacak Puan</label>
+                        <input type="number" class="form-control" id="points_reward" name="points_reward" placeholder="Örn: 100" min="1" required>
+                    </div>
+
+                    <div class="form-group mb-3">
+                        <label for="mission_type" class="form-label">Görev Tipi</label>
+                        <select class="form-control" id="mission_type" name="mission_type" required>
+                            <option value="">Bir Görev Tipi Seçin</option>
+                            <option value="RESERVATION_COMPLETE">Rezervasyon Tamamlama</option>
+                            <option value="SOCIAL_SHARE">Sosyal Medya Paylaşımı</option>
+                            <option value="NEWSLETTER_SUBSCRIBE">E-posta Bültenine Kaydolma</option>
+                            <option value="REVIEW_WRITE">Yorum Yazma</option>
+                            <option value="FIRST_LOGIN">İlk Giriş</option>
+                            <option value="OTHER">Diğer</option>
+                        </select>
+                    </div>
+
+                    <div class="form-check mb-3">
+                        <input type="checkbox" class="form-check-input" id="is_repeatable" name="is_repeatable">
+                        <label class="form-check-label" for="is_repeatable">Bu görev tekrarlanabilir mi?</label>
+                    </div>
+
+                    <div class="form-check mb-4">
+                        <input type="checkbox" class="form-check-input" id="is_active" name="is_active" checked>
+                        <label class="form-check-label" for="is_active">Bu görev şu anda aktif mi?</label>
+                    </div>
+
+                    <button type="submit" class="btn btn-success btn-lg">Görevi Kaydet</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock content %}

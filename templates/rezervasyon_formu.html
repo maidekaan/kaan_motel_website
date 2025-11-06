@@ -1,0 +1,255 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+
+<div class="container mt-4">
+    {# Flash Mesajları #}
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+</div>
+
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8 col-md-10">
+            
+            <div class="card shadow-lg p-4 p-md-5">
+                <h1 class="mb-4 card-title text-center">{{ title }}</h1>
+                <p class="lead text-center mb-4">Müsaitlik durumunu kontrol ederek ve formu doldurarak rezervasyon talebinizi kesinleştirin.</p>
+                
+                <form action="{{ url_for('rezervasyon_yap') }}" method="POST" class="needs-validation" id="rezervasyonForm" novalidate>
+                    
+                    <h4 class="mb-3 border-bottom pb-2 text-primary">Konaklama Bilgileri</h4>
+                    
+                    <div class="form-row">
+                        <div class="form-group col-md-6">
+                            <label for="check_in">Giriş Tarihi (Check-in)</label>
+                            <input type="date" class="form-control" id="check_in" name="check_in" 
+                                   min="{{ datetime.now().strftime('%Y-%m-%d') }}" required>
+                            <div class="invalid-feedback">Lütfen bir giriş tarihi seçin.</div>
+                        </div>
+                        <div class="form-group col-md-6">
+                            <label for="check_out">Çıkış Tarihi (Check-out)</label>
+                            <input type="date" class="form-control" id="check_out" name="check_out" 
+                                   min="{{ datetime.now().strftime('%Y-%m-%d') }}" required>
+                            <div class="invalid-feedback">Lütfen bir çıkış tarihi seçin.</div>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group col-md-4">
+                            <label for="room_type">Oda Tipi</label>
+                            <select id="room_type" name="room_type" class="form-control" required>
+                                <option value="" disabled selected data-price="0">Seçiniz...</option>
+                                
+                                {# BURADA 'rooms' listesi KULLANILIYOR, oda_tipleri DEĞİL #}
+                                {% for room in rooms %} 
+                                    <option value="{{ room.id }}" 
+                                            data-price="{{ room.price_per_night }}"> 
+                                        {{ room.name }} (Gecelik: {{ room.price_per_night | int }} TL)
+                                    </option>
+                                {% endfor %}
+                                {# ⭐ YENİ EKLENEN SEÇENEK ⭐ #}
+                                <option value="Yat Kulübü" data-price="0">Yat Kulübü Rezervasyonu</option>
+                                {# ⭐ EKLEME SONU ⭐ #}
+                            </select>
+                            <div class="invalid-feedback">Lütfen bir oda tipi seçin.</div>
+                        </div>
+                        <div class="form-group col-md-4">
+                            <label for="adults">Yetişkin Sayısı</label>
+                            <input type="number" class="form-control" id="adults" name="adults" min="1" value="1" required>
+                            <div class="invalid-feedback">Minimum 1 yetişkin gereklidir.</div>
+                        </div>
+                        <div class="form-group col-md-4">
+                            <label for="children">Çocuk Sayısı (0-6 yaş)</label>
+                            <input type="number" class="form-control" id="children" name="children" min="0" value="0" required>
+                            <div class="invalid-feedback">Lütfen çocuk sayısını girin (0 veya üzeri).</div>
+                        </div>
+                    </div>
+
+                    {# ⭐ TOPLAM ÜCRET GÖSTERGE ALANI ⭐ #}
+                    <div class="alert alert-info mt-3 d-none" id="toplam_ucret_alani">
+                        <strong>Toplam Fiyat:</strong> 
+                        <span id="toplam_tutar" class="font-weight-bold">0.00 TL</span> 
+                        (<span id="gece_sayisi">0</span> gece için)
+                    </div>
+
+                    <h4 class="mt-4 mb-3 border-bottom pb-2 text-primary">İletişim Bilgileriniz</h4>
+                    
+                    <div class="form-group">
+                        <label for="guest_name">Ad Soyad</label>
+                        <input type="text" class="form-control" id="guest_name" name="guest_name" required>
+                        <div class="invalid-feedback">Lütfen adınızı ve soyadınızı girin.</div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group col-md-6">
+                            <label for="guest_email">E-posta</label>
+                            <input type="email" class="form-control" id="guest_email" name="guest_email" required>
+                            <div class="invalid-feedback">Lütfen geçerli bir e-posta adresi girin.</div>
+                        </div>
+                        <div class="form-group col-md-6">
+                            <label for="guest_phone">Telefon Numarası</label>
+                            <input type="tel" class="form-control" id="guest_phone" name="guest_phone" placeholder="Örn: 5xx xxx xx xx" required>
+                            <div class="invalid-feedback">Lütfen telefon numaranızı girin.</div>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-lg btn-block mt-4">Rezervasyon Talebi Oluştur</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// 1. Bootstrap form doğrulama (Mevcut kodunuz)
+(function() {
+    'use strict';
+    window.addEventListener('load', function() {
+        var form = document.getElementById('rezervasyonForm');
+        form.addEventListener('submit', function(event) {
+            if (form.checkValidity() === false) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            form.classList.add('was-validated');
+        }, false);
+    }, false);
+})();
+
+
+// 2. Check-in / Check-out Tarih Kontrolü (Mevcut kodunuz)
+document.getElementById('check_in').addEventListener('change', function() {
+    const checkInDate = this.value;
+    const checkOutInput = document.getElementById('check_out');
+    
+    if (checkInDate) {
+        const minCheckoutDate = new Date(checkInDate);
+        minCheckoutDate.setDate(minCheckoutDate.getDate() + 1);
+        
+        const yyyy = minCheckoutDate.getFullYear();
+        const mm = String(minCheckoutDate.getMonth() + 1).padStart(2, '0'); 
+        const dd = String(minCheckoutDate.getDate()).padStart(2, '0');
+        
+        checkOutInput.min = `${yyyy}-${mm}-${dd}`;
+
+        if (checkOutInput.value < checkOutInput.min) {
+             checkOutInput.value = checkOutInput.min;
+        }
+    }
+    hesaplaToplamUcret(); // Tarih değişince anlık hesaplama tetiklenir
+});
+
+
+// 3. TOPLAM ÜCRET HESAPLAMA FONKSİYONU (KDV Dahil eklendi)
+document.addEventListener('DOMContentLoaded', function () {
+    const girisTarihiInput = document.getElementById('check_in');
+    const cikisTarihiInput = document.getElementById('check_out');
+    const odaTipiSelect = document.getElementById('room_type');
+    const toplamUcretAlani = document.getElementById('toplam_ucret_alani');
+    const toplamTutarSpan = document.getElementById('toplam_tutar');
+    const geceSayisiSpan = document.getElementById('gece_sayisi');
+
+    function hesaplaToplamUcret() {
+        const girisTarihiStr = girisTarihiInput.value;
+        const cikisTarihiStr = cikisTarihiInput.value;
+        const seciliOdaOption = odaTipiSelect.options[odaTipiSelect.selectedIndex];
+        
+        // Fiyatı gizli data attribute'dan alıyoruz
+        const gecelikFiyat = parseFloat(seciliOdaOption.getAttribute('data-price'));
+
+        if (!girisTarihiStr || !cikisTarihiStr || isNaN(gecelikFiyat) || seciliOdaOption.value === "") {
+            toplamUcretAlani.classList.add('d-none');
+            return;
+        }
+
+        // Tarihleri saat dilimi sorununa karşı koruyarak UTC olarak alıyoruz
+        const girisTarihi = new Date(girisTarihiStr + 'T00:00:00');
+        const cikisTarihi = new Date(cikisTarihiStr + 'T00:00:00');
+
+        const farkMs = cikisTarihi.getTime() - girisTarihi.getTime();
+        const farkGun = farkMs / (1000 * 60 * 60 * 24);
+        
+        if (farkGun <= 0 || isNaN(farkGun)) {
+            geceSayisiSpan.textContent = 0;
+            toplamTutarSpan.textContent = 'Geçersiz Tarih Aralığı';
+            toplamUcretAlani.classList.remove('d-none', 'alert-info');
+            toplamUcretAlani.classList.add('alert-danger'); 
+            return;
+        }
+
+        const geceSayisi = Math.round(farkGun); 
+        const toplamTutar = geceSayisi * gecelikFiyat;
+
+        // Sonuçları Göster (KDV Dahil metni buraya eklendi)
+        geceSayisiSpan.textContent = geceSayisi;
+        toplamTutarSpan.textContent = toplamTutar.toLocaleString('tr-TR', { 
+            style: 'currency', 
+            currency: 'TRY', 
+            minimumFractionDigits: 2 
+        }) + " (KDV Dahil)"; // <-- KDV Dahil Eklendi
+        
+        toplamUcretAlani.classList.remove('d-none', 'alert-danger');
+        toplamUcretAlani.classList.add('alert-info'); 
+    }
+
+    // Olay Dinleyicileri
+    document.getElementById('check_out').addEventListener('change', hesaplaToplamUcret);
+    odaTipiSelect.addEventListener('change', hesaplaToplamUcret);
+});
+</script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const odaTipiSelect = document.getElementById('room_type');
+    // Formunuzun ID'si 'rezervasyonForm' olarak varsayılmıştır. Eğer farklıysa değiştirin.
+    const mainRezervasyonForm = document.getElementById('rezervasyonForm'); 
+
+    const YAT_KULUBU_VALUE = "Yat Kulübü"; 
+    // Yeni rotanızın adı ('yat_kulubu_form' olarak kabul edilmiştir)
+    const YAT_KULUBU_URL = "{{ url_for('yat_kulubu_form') }}"; 
+    
+    // Normal oda seçimi olduğunda ücret hesaplama fonksiyonunuzu tetikleyin (eğer varsa)
+    function handleNormalRoomSelection() {
+        // Sizin ücret hesaplama fonksiyonunuzu buraya çağırın. Örn: hesaplaToplamUcret();
+        console.log("Normal oda seçildi, standart işlem devam ediyor.");
+    }
+
+    // --- YAT KULÜBÜ YÖNLENDİRME İŞLEMİ ---
+    odaTipiSelect.addEventListener('change', function() {
+        if (odaTipiSelect.value === YAT_KULUBU_VALUE) {
+            // 1. Yönlendiriyoruz, formun submit edilmesini önlüyoruz
+            window.location.href = YAT_KULUBU_URL;
+        } else {
+            // 2. Normal oda seçimi ise, ücret hesaplama vb. standart işlemleri yap.
+            handleNormalRoomSelection();
+        }
+    });
+
+    // --- FORMU SUBMIT EDERKEN KONTROL (Önemli) ---
+    // Eğer kullanıcı JavaScript kapalıyken veya başka bir yolla formu direkt submit ederse:
+    if (mainRezervasyonForm) {
+        mainRezervasyonForm.addEventListener('submit', function(event) {
+            if (odaTipiSelect.value === YAT_KULUBU_VALUE) {
+                event.preventDefault(); // Formun gönderilmesini engelle
+                window.location.href = YAT_KULUBU_URL; // Manuel yönlendir
+            }
+        });
+    }
+    
+    // Diğer tüm scriptleriniz (tarih hesaplama, form doğrulama) burada kalmalı.
+});
+</script>
+
+{% endblock %}

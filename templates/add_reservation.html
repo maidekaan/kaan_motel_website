@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="section-title">
+    <div class="container">
+        <h1>Yeni Manuel Rezervasyon Ekle</h1>
+        <p>Telefon veya diğer kanallardan gelen rezervasyonları sisteme buradan giriniz.</p>
+        <a href="{{ url_for('admin_dashboard') }}" class="btn-secondary">Geri Dön</a>
+        <div class="message-area" style="margin-top: 20px;">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="flash-message flash-{{ category }}">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+        </div>
+    </div>
+</section>
+
+<section class="reservation-form-section">
+    <div class="container">
+        
+        <form method="POST" action="{{ url_for('add_reservation') }}" class="reservation-form">
+            
+            <h2>1. Oda ve Tarih Seçimi</h2>
+            <div class="form-group">
+                <label for="room_id">Oda Numarası</label>
+                <select id="room_id" name="room_id" required>
+                    <option value="" disabled selected>Lütfen oda numarası seçiniz</option>
+                    {% for room in rooms %}
+                        <option value="{{ room.id }}">{{ room.display_name }}</option>
+                        {% endfor %}
+                </select>
+                <small class="form-note">Seçtiğiniz odanın müsaitliği kontrol edilecektir.</small>
+            </div>
+            
+            <div class="form-group half-width">
+                <label for="check_in">Giriş Tarihi</label>
+                <input type="date" id="check_in" name="check_in" min="{{ datetime.now().strftime('%Y-%m-%d') }}" required>
+            </div>
+            <div class="form-group half-width">
+                <label for="check_out">Çıkış Tarihi</label>
+                <input type="date" id="check_out" name="check_out" min="{{ datetime.now().strftime('%Y-%m-%d') }}" required>
+            </div>
+            <div class="form-group half-width">
+                <label for="adults">Yetişkin Sayısı</label>
+                <input type="number" id="adults" name="adults" min="1" max="4" value="1" required>
+            </div>
+            <div class="form-group half-width">
+                <label for="children">Çocuk Sayısı</label>
+                <input type="number" id="children" name="children" min="0" max="3" value="0">
+            </div>
+
+            <h2>2. Misafir Bilgileri</h2>
+            <div class="form-group">
+                <label for="guest_name">Adınız Soyadınız</label>
+                <input type="text" id="guest_name" name="guest_name" required>
+            </div>
+             <div class="form-group half-width">
+                <label for="guest_email">E-posta</label>
+                <input type="email" id="guest_email" name="guest_email" required>
+            </div>
+             <div class="form-group half-width">
+                <label for="guest_phone">Telefon Numarası</label>
+                <input type="tel" id="guest_phone" name="guest_phone" required>
+            </div>
+
+            <button type="submit" class="btn-lg btn-primary">Rezervasyonu Kaydet ve Onayla</button>
+        </form>
+    </div>
+</section>
+
+{% endblock %}

@@ -250,44 +250,26 @@
             </thead>
             <tbody>
                 {% for mission in missions %}
-                <tr>
-                    <td>{{ mission.id }}</td>
-                    <td>{{ mission.title }}</td>
-                    <td class="text-muted small" style="max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ mission.description or 'Açıklama yok' }}</td> <td><span class="badge bg-success">+{{ mission.points_reward }}</span></td>
-                    <td>{{ mission.type }}</td>
-                    <td>{% if mission.is_repeatable %}Evet{% else %}Hayır{% endif %}</td>
-                    <td>
-                        {% if mission.is_active %}
-                            <span class="badge bg-success">Aktif</span>
-                        {% else %}
-                            <span class="badge bg-warning text-dark">Pasif</span>
-                        {% endif %}
-                    </td>
-                    <td class="text-nowrap">
-                        <a href="{{ url_for('toggle_mission', mission_id=mission.id) }}" 
-                           class="btn btn-sm {% if mission.is_active %}btn-danger{% else %}btn-success{% endif %}">
-                            {% if mission.is_active %}Yayından Kaldır{% else %}Aktif Et{% endif %}
-                        </a>
-                        
-                        {% if mission.type not in ['SOCIAL_SHARE', 'NEWSLETTER_SUBSCRIBE', 'FIRST_LOGIN'] %}
-                            <button class="btn btn-sm btn-info dropdown-toggle" type="button" data-toggle="dropdown">
-                                Onay Bekleyenleri Gör
-                            </button>
-                            <div class="dropdown-menu">
-                                {% for user in users_list %}
-                                    <a class="dropdown-item" 
-                                       href="{{ url_for('approve_mission_manual', user_id=user.id, mission_id=mission.id) }}" 
-                                       onclick="return confirm('{{ user.username }} kullanıcısının {{ mission.title }} görevini onaylamak istediğinizden emin misiniz?');">
-                                        {{ user.username }} (Puan Ekle)
-                                    </a>
-                                {% endfor %}
-                            </div>
-                        {% endif %}
-                    </td>
-                </tr>
-                {% else %}
-                <tr><td colspan="8" class="text-center text-muted py-3">Yönetici tarafından tanımlanmış görev bulunmamaktadır.</td></tr>
-                {% endfor %}
+<tr>
+    <td>{{ mission.title }}</td>
+    <td>{{ mission.description }}</td>
+    <td>{{ "Yayında" if mission.is_active else "Pasif" }}</td>
+    <td>
+        <a href="{{ url_for('toggle_mission', mission_id=mission.id) }}" 
+           class="btn btn-warning btn-sm">
+           {% if mission.is_active %} Yayından Kaldır {% else %} Yayına Al {% endif %}
+        </a>
+    </td>
+<a href="{{ url_for('delete_mission', mission_id=mission.id) }}" 
+   class="btn btn-danger btn-sm"
+   onclick="return confirm('Bu görevi tamamen silmek istediğinize emin misiniz?');">
+   Sil
+</a>
+
+</tr>
+{% endfor %}
+
+                
             </tbody>
         </table>
     </div>

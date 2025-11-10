@@ -3,6 +3,7 @@ from flask import abort #
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
+from sqlalchemy import cast, Integer
 
 
 # Flask-Login ve diğer bağımlılıklar
@@ -529,6 +530,24 @@ ADA_REHBERI_YERI = [
     },
 ]
 # ----------------------------------------------------
+@app.route('/admin/delete_mission/<int:mission_id>', methods=['GET'])
+@login_required
+def delete_mission(mission_id):
+    if not current_user.is_admin:
+        flash("Bu işlem için yetkiniz yok.", "danger")
+        return redirect(url_for('admin_dashboard'))
+    
+    mission = Mission.query.get_or_404(mission_id)
+    
+    # Kullanıcı görev kayıtlarını da sil
+    UserMission.query.filter_by(mission_id=mission_id).delete()
+    
+    db.session.delete(mission)
+    db.session.commit()
+    
+    flash(f"'{mission.title}' görevi başarıyla silindi.", "success")
+    return redirect(url_for('admin_dashboard') + '#missions-management')
+
 @app.route("/etkinlik1")
 def etkinlik1():
     return render_template("etkinlik1.html")
@@ -757,7 +776,8 @@ def takvim_doluluk_oda_api(year, month):
     try:
         from datetime import date, timedelta
         import calendar
-        from sqlalchemy import or_ # Eğer or_ Flask uygulamanızda import edilmemişse buraya ekleyin
+        from sqlalchemy import or_, cast
+        from sqlalchemy.types import Integer
         
         start_date = date(year, month, 1)
     except ValueError:
@@ -771,10 +791,10 @@ def takvim_doluluk_oda_api(year, month):
     
     num_days = calendar.monthrange(year, month)[1]
 
-    # Tüm odaları doğru şekilde sırala (Room, Reservation, jsonify'ın tanımlı olduğunu varsayıyoruz)
-    tum_odalar = Room.query.order_by(Room.room_number).all()
+    # Tüm odaları doğru şekilde numerik sıralayalım
+    tum_odalar = Room.query.order_by(cast(Room.room_number, Integer)).all()
 
-    # Bu ay aralığındaki çakışan rezervasyonları tek sorguyla al 
+    # Çakışan rezervasyonları tek sorguda al
     clashing_reservations = Reservation.query.filter(
         Reservation.room_id.in_([r.id for r in tum_odalar]),
         Reservation.check_out > start_date,
@@ -788,26 +808,23 @@ def takvim_doluluk_oda_api(year, month):
 
     result = []
 
-    # 🚨 TEMİZLENMİŞ VE TEK DÖNGÜ BAŞLANGICI
-    for oda in tum_odalar:
-        
-        # ROOM_DISPLAY_NAMES sözlüğünden kullanıcı dostu adı al
-        # (Bu sözlüğün fonksiyon dışında, app.py'nin en üstünde tanımlı OLMASI GEREKİR)
-        gorunur_oda_adi = ROOM_DISPLAY_NAMES.get(oda.room_number, oda.room_number)
-        
+    for index, oda in enumerate(tum_odalar):
+        # CUSTOM_CALENDAR_NAMES varsa ona göre isim ver, yoksa ROOM_DISPLAY_NAMES
+        if index < len(CUSTOM_CALENDAR_NAMES):
+            gorunur_oda_adi = CUSTOM_CALENDAR_NAMES[index]
+        else:
+            gorunur_oda_adi = ROOM_DISPLAY_NAMES.get(oda.room_number, oda.room_number)
+
         gunler = []
         current_date = start_date
         for day in range(1, num_days + 1):
-            
             dolu = False
             rez_id = None
             for res in clashing_reservations:
-                if res.room_id == oda.id:
-                    # check_out günü doluluk sayılmaz, o yüzden sadece < var
-                    if res.check_in <= current_date < res.check_out: 
-                        dolu = True
-                        rez_id = res.id
-                        break
+                if res.room_id == oda.id and res.check_in <= current_date < res.check_out:
+                    dolu = True
+                    rez_id = res.id
+                    break
             gunler.append({
                 'gun': current_date.day,
                 'durum': 'dolu' if dolu else 'bos',
@@ -817,11 +834,12 @@ def takvim_doluluk_oda_api(year, month):
 
         result.append({
             'oda_id': oda.id,
-            'oda': gorunur_oda_adi,  # Doğru adı gönderiyor
+            'oda': gorunur_oda_adi,
             'gunler': gunler
         })
 
     return jsonify(result)
+
 
 
 @app.route('/rezervasyon/yap', methods=['POST'])
@@ -1194,7 +1212,7 @@ from flask import render_template, redirect, url_for, flash, request
 from flask_login import login_required, current_user
 from sqlalchemy import or_ # Eğer bu import yoksa ekleyin
 
-@app.route('/admin-dashboard') # TİRE'LI TANIM
+@app.route('/admin-dashboard')  # TİRE'LI TANIM
 @login_required
 def admin_dashboard():
     if not current_user.is_admin:
@@ -1212,9 +1230,10 @@ def admin_dashboard():
         )
     ).order_by(Reservation.check_in.asc()).all()
     
-    rooms = Room.query.order_by(Room.room_number).all()
-    users_list = User.query.filter(User.is_admin == False).all()
+    # Odaları room_number'a göre sıralıyoruz
+    rooms = Room.query.order_by(cast(Room.room_number, Integer)).all()
     
+    users_list = User.query.filter(User.is_admin == False).all()
     all_missions = Mission.query.order_by(Mission.is_active.desc(), Mission.id.asc()).all()
     
     # Ödül Taleplerini Çek
@@ -1225,11 +1244,12 @@ def admin_dashboard():
         'admin_dashboard.html', 
         current_user=current_user,
         reservations=reservations,
-        rooms=rooms,
+        rooms=rooms,  # sorted_rooms yerine rooms olarak gönderdik
         users_list=users_list,
         missions=all_missions,
         pending_redemptions=pending_redemptions
     )
+
     
     
 # --- 2. YENİ ROTA: Görev Aktivasyon/Deaktivasyon ---
@@ -1244,8 +1264,11 @@ def toggle_mission(mission_id):
     mission.is_active = not mission.is_active
     
     status_msg = "yayında" if mission.is_active else "yayından kaldırıldı"
+    db.session.commit()
+    
     flash(f"'{mission.title}' görevi artık {status_msg}.", "info")
-    return redirect(url_for('admin_dashboard') + '#missions-management') # Görev sekmesine dönsün
+    return redirect(url_for('admin_dashboard') + '#missions-management')
+
 
 # --- 3. YENİ ROTA: Görev Tamamlama Onayı (Manual Onay Gerektiren Görevler İçin) ---
 @app.route('/admin/approve_mission/<int:user_id>/<int:mission_id>', methods=['GET'])
@@ -1356,16 +1379,13 @@ def add_reservation():
 
     # GET isteği (formu göstermek için)
     formatted_rooms = []
-    sorted_rooms = Room.query.order_by(Room.room_number).all()
+    # Oda numarasına göre doğru sıralama
+    sorted_rooms = Room.query.order_by(cast(Room.room_number, Integer)).all()
     
     for index, room in enumerate(sorted_rooms):
-        room_name = room.room_number 
-        
-        if index < len(CUSTOM_CALENDAR_NAMES):
-            room_name = CUSTOM_CALENDAR_NAMES[index]
-        
+        # Kullanıcıya gösterilecek isim
+        room_name = CUSTOM_CALENDAR_NAMES[index] if index < len(CUSTOM_CALENDAR_NAMES) else str(room.room_number)
         room.display_name = f"{room_name} ({room.room_number})"
-        
         formatted_rooms.append(room)
     
     return render_template('add_reservation.html', 
@@ -1374,6 +1394,7 @@ def add_reservation():
                             rooms=formatted_rooms, 
                             oda_tipleri=ODA_TIPLERI_DICT,
                             datetime=datetime)
+
 
 
 @app.route('/admin/update-status/<int:reservation_id>/<string:new_status>')

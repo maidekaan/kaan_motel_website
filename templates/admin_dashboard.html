@@ -298,6 +298,11 @@
                                 <td><span class="badge bg-danger">{{ redemption.points_used }}</span></td>
                                 <td>{{ redemption.redemption_date.strftime('%d.%m.%Y') }}</td>
                                 <td class="text-nowrap">
+
+    <button class="btn btn-sm btn-outline-primary" title="Puan Ekle/Çıkar">Puan Yönet</button>
+    <button class="btn btn-sm btn-outline-success" onclick="sendNotification({{ user.id }})" title="Bildirim Gönder">Bildirim Gönder</button>
+</td>
+
                                     <a href="{{ url_for('approve_redemption', redemption_id=redemption.id) }}" class="btn btn-success btn-sm">Onayla</a>
                                     <a href="{{ url_for('reject_redemption', redemption_id=redemption.id) }}" class="btn btn-danger btn-sm">Reddet</a>
                                 </td>

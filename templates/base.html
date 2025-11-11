@@ -45,7 +45,14 @@
 <div id="kampanyaPanel" class="position-fixed top-50 start-50 translate-middle bg-warning p-4 rounded shadow-lg" style="z-index: 1050; max-width: 400px; display: none;">
     <div class="d-flex justify-content-between align-items-start">
         <h5 class="mb-2">Kampanya!</h5>
-        <button type="button" class="btn-close" aria-label="Kapat" onclick="document.getElementById('kampanyaPanel').style.display='none';"></button>
+        <button type="button" 
+        class="close text-dark" 
+        aria-label="Kapat"
+        style="font-size: 1.5rem; font-weight: bold; background: none; border: none;"
+        onclick="document.getElementById('kampanyaPanel').style.display='none';">
+    &times;
+</button>
+
     </div>
     <p class="mb-0">Sitemize özel fırsatları kaçırmayın! Hemen rezervasyon yapın ve avantajlardan yararlanın.</p>
 </div>

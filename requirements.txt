@@ -39,7 +39,6 @@ numpy==2.3.1
 openpyxl==3.1.5
 packaging==25.0
 pandas==2.3.1
-pandas_ta==0.3.14b0
 pefile==2023.2.7
 pillow==11.3.0
 propcache==0.3.2

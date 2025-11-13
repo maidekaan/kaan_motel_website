@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block content %}
+<!-- --- Blog Post CSS --- -->
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Great+Vibes&family=Playfair+Display:wght@400;700&display=swap');
+
+h1, h2, h3, h4, h5, h6 {
+    font-family: 'Great Vibes', cursive;
+    color: #2c3e50;
+    margin-top: 1.5rem;
+    margin-bottom: 0.75rem;
+}
+
+article {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.1rem;
+    line-height: 1.8;
+    color: #34495e;
+}
+
+a {
+    color: #2980b9;
+    text-decoration: none;
+}
+a:hover {
+    text-decoration: underline;
+}
+
+article ul, article ol {
+    margin-left: 1.5rem;
+    margin-bottom: 1rem;
+}
+</style>
+
+<article id="blogContent">
+    <!-- Markdown içeriği buraya JS ile eklenecek -->
+</article>
+
+<a href="{{ url_for('blog_list') }}">← Blog Listesine Dön</a>
+
+<!-- --- Markdown JS Library --- -->
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+<script>
+// Markdown içeriğini güvenli şekilde HTML'e çevir
+const rawContent = `{{ post.content|replace("`","\\`")|replace("\r","")|replace("\n","\\n") }}`; 
+const blogContainer = document.getElementById('blogContent');
+blogContainer.innerHTML = marked.parse(rawContent);
+</script>
+{% endblock %}

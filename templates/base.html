@@ -3,45 +3,56 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- Dinamik Title ve Description -->
     <title>{{ title | default('Kaan Motel - Avşa Adası') }}</title>
-
-    <!-- ✅ SEO Meta Etiketleri -->
-    <meta name="description" content="Kaan Motel - Avşa Adası’nda huzurlu bir tatil deneyimi. Denize sıfır konum, konforlu odalar, yat kulübü etkinlikleri ve evcil hayvan dostu seçenekler.">
+    <meta name="description" content="{{ description | default('Kaan Motel - Avşa Adası’nda huzurlu bir tatil deneyimi. Denize sıfır konum, konforlu odalar, yat kulübü etkinlikleri ve evcil hayvan dostu seçenekler.') }}">
+    
+    <!-- SEO Meta Etiketleri -->
     <meta name="keywords" content="Kaan Motel, Avşa Adası, otel, tatil, konaklama, denize sıfır otel, yat kulübü, Avşa otel, evcil hayvan dostu otel">
     <meta name="author" content="Kaan Motel">
     <meta name="robots" content="index, follow">
     <meta name="language" content="Turkish">
-
-    <!-- ✅ Open Graph (Sosyal Medya) -->
-    <meta property="og:title" content="Kaan Motel - Avşa Adası'nda Huzurlu Kaçış Noktanız">
-    <meta property="og:description" content="Avşa Adası’nda denize sıfır konumu, yat kulübü ve konforlu odalarıyla unutulmaz bir tatil.">
+    
+    <!-- Canonical URL -->
+    <link rel="canonical" href="{{ request.url }}">
+    
+    <!-- Open Graph (Sosyal Medya) -->
+    <meta property="og:title" content="{{ title | default('Kaan Motel - Avşa Adası') }}">
+    <meta property="og:description" content="{{ description | default('Avşa Adası’nda denize sıfır konumu, yat kulübü ve konforlu odalarıyla unutulmaz bir tatil.') }}">
     <meta property="og:image" content="{{ url_for('static', filename='kaan_logo.png', _external=True) }}">
-    <meta property="og:url" content="{{ request.url_root }}">
+    <meta property="og:url" content="{{ request.url }}">
     <meta property="og:type" content="website">
-
-    <!-- ✅ Favicon -->
+    
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="{{ title | default('Kaan Motel - Avşa Adası') }}">
+    <meta name="twitter:description" content="{{ description | default('Avşa Adası’nda denize sıfır konumu, yat kulübü ve konforlu odalarıyla unutulmaz bir tatil.') }}">
+    <meta name="twitter:image" content="{{ url_for('static', filename='kaan_logo.png', _external=True) }}">
+    
+    <!-- Favicon -->
     <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
 
-    <!-- ✅ Google Fonts -->
+    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400..700&family=Open+Sans:wght@300;400;600&family=Playfair+Display:wght@400;600&display=swap" rel="stylesheet">
 
-    <!-- ✅ Bootstrap -->
+    <!-- Bootstrap -->
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
 
-    <!-- ✅ Font Awesome -->
+    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
 
-    <!-- ✅ Swiper -->
+    <!-- Swiper -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@10/swiper-bundle.min.css"/>
 
-    <!-- ✅ Özel CSS -->
+    <!-- Özel CSS -->
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 
     {% block head %}{% endblock %}
 </head>
 <body>
 
-<!-- ✅ Kampanya Paneli -->
+<!-- Kampanya Paneli -->
 <div id="kampanyaPanel" class="position-fixed top-50 start-50 translate-middle bg-warning p-4 rounded shadow-lg" style="z-index: 1050; max-width: 400px; display: none;">
     <div class="d-flex justify-content-between align-items-start">
         <h5 class="mb-2">Kampanya!</h5>
@@ -52,16 +63,13 @@
         onclick="document.getElementById('kampanyaPanel').style.display='none';">
     &times;
 </button>
-
     </div>
     <p class="mb-0">Sitemize özel fırsatları kaçırmayın! Hemen rezervasyon yapın ve avantajlardan yararlanın.</p>
 </div>
 
-<!-- ✅ Mobil uyumlu NAVBAR -->
+<!-- NAVBAR -->
 <nav class="navbar navbar-expand-lg navbar-light bg-light py-4 shadow-sm">
     <div class="container">
-
-        <!-- LOGO -->
         <a class="navbar-brand d-flex align-items-center" href="{{ url_for('index') }}">
             <img src="{{ url_for('static', filename='kaan_logo.png') }}"
                  alt="Kaan Motel Logo"
@@ -74,20 +82,17 @@
             </div>
         </a>
 
-        <!-- Hamburger Menü -->
         <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav"
                 aria-controls="navbarNav" aria-expanded="false" aria-label="Menüyü Aç">
             <span class="navbar-toggler-icon"></span>
         </button>
 
-        <!-- Menü Linkleri -->
         <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav ml-auto align-items-lg-center text-center">
                 <li class="nav-item"><a class="nav-link" href="{{ url_for('odalar') }}">Odalar</a></li>
                 <li class="nav-item"><a class="nav-link" href="{{ url_for('galeri') }}">Galeri</a></li>
                 <li class="nav-item"><a class="nav-link" href="{{ url_for('konum_iletisim') }}">Konum & İletişim</a></li>
                 <li class="nav-item"><a class="nav-link" href="{{ url_for('ada_rehberi') }}">Ada Rehberi</a></li>
-
                 <li class="nav-item mt-2 mt-lg-0">
                     <a class="btn btn-outline-primary btn-lg px-5 py-2 fw-bold shadow-sm" 
                        href="{{ url_for('yat_klubu') }}" 
@@ -95,13 +100,14 @@
                         <i class="fas fa-ship mr-1"></i> Yat Kulübü
                     </a>
                 </li>
-
                 <li class="nav-item mt-2 mt-lg-0 ml-lg-2">
                     <a class="btn btn-primary btn-sm text-white px-3" href="{{ url_for('rezervasyon_formu') }}">
                         Rezervasyon Yap
                     </a>
                 </li>
-
+<li class="nav-item">
+    <a class="nav-link" href="{{ url_for('blog_index') }}">Blog</a>
+</li>
                 {% if current_user.is_authenticated %}
                     {% if current_user.is_admin %}
                         <li class="nav-item"><a class="nav-link" href="{{ url_for('admin_dashboard') }}">Yönetici Paneli</a></li>
@@ -131,20 +137,35 @@
     </div>
 </footer>
 
-<!-- ✅ JS -->
+<!-- JS -->
 <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
 <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
-
-<!-- ✅ Swiper JS -->
 <script src="https://cdn.jsdelivr.net/npm/swiper@10/swiper-bundle.min.js"></script>
 
-<!-- ✅ Kampanya Panelini Göster -->
+<!-- Kampanya Panelini Göster -->
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     const panel = document.getElementById('kampanyaPanel');
     panel.style.display = 'block';
 });
+</script>
+
+<!-- JSON-LD Schema.org -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Hotel",
+  "name": "Kaan Motel",
+  "image": "{{ url_for('static', filename='kaan_logo.png', _external=True) }}",
+  "address": {
+    "@type": "PostalAddress",
+    "streetAddress": "Avşa Adası",
+    "addressLocality": "Avşa",
+    "addressCountry": "TR"
+  },
+  "url": "{{ request.url_root }}"
+}
 </script>
 
 {% block scripts %}{% endblock %}

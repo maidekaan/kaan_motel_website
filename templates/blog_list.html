@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+<style>
+/* Google Fonts ekleme */
+@import url('https://fonts.googleapis.com/css2?family=Great+Vibes&family=Playfair+Display:wght@400;700&display=swap');
+
+/* Başlıklar için el yazısı */
+h1, h2, h3, h4, h5, h6 {
+    font-family: 'Great Vibes', cursive;
+    color: #2c3e50; /* İstersen değiştirebilirsin */
+}
+
+/* Blog metinleri için zarif font */
+p, li, span, div {
+    font-family: 'Playfair Display', serif;
+    color: #34495e;
+    line-height: 1.7;
+}
+
+/* Linkler için uyumlu renk ve efekt */
+a {
+    color: #2980b9;
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+/* Blog başlıklarını büyüt ve buton gibi yap */
+ul li a {
+    display: block;
+    padding: 10px;
+    background: #f0f0f0;
+    border-radius: 5px;
+    font-weight: bold;
+    font-size: 1.2rem;
+    margin-bottom: 10px;
+}
+</style>
+
+{% block content %}
+<h1>Blog Avşa Kaan Motel</h1>
+<h2>Adamız hakkında bilgiler ve güncel haberlere buradan ulaşabilirsiniz</h2>
+<ul>
+    {% for post in posts %}
+        <li>
+            <a href="{{ url_for('blog_post', slug=post.slug) }}">{{ post.title }}</a>
+            <!-- created_at kaldırıldı -->
+        </li>
+    {% else %}
+        <li>Henüz blog yazısı bulunmamaktadır.</li>
+    {% endfor %}
+</ul>
+{% endblock %}

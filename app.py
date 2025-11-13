@@ -1,20 +1,21 @@
-import os #
-from flask import abort #
+import os
+from flask import abort
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from sqlalchemy import cast, Integer
-
+from datetime import datetime
+from flask_login import login_required, current_user
+from markupsafe import Markup  # flask.Markup yerine
 
 # Flask-Login ve diğer bağımlılıklar
-from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user 
+from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, date, timedelta
 from sqlalchemy import and_, or_
-# Takvim işlemleri için yeni kütüphane
 import calendar
-from sqlalchemy import UniqueConstraint # Sadakat sistemi için eklendi
-# app.py dosyasında, mevcut import'ların hemen altına ekleyin
+import markdown
+from sqlalchemy import UniqueConstraint
 
 ROOM_DISPLAY_NAMES = {
     'STD01': 'Oda 1',
@@ -25,27 +26,34 @@ ROOM_DISPLAY_NAMES = {
     'PET01': 'Oda 7',
     'STD07': 'Oda 8',
     'LSU01': 'Üst Kat',
-    # Eğer başka odalarınız varsa, buraya eklediğinizden emin olun.
 }
 
-# --- UYGULAMA AYARLARI VE KÜTÜPHANE BAĞLANTILARI ---
+# --- UYGULAMA AYARLARI ---
 app = Flask(__name__)
-
-# Veritabanı ve Güvenlik Ayarları
+app.config['SECRET_KEY'] = 'maidekaan91'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///sadakat.db'
-# BURAYI KENDİ GÜVENLİ ANAHTARINIZLA DEĞİŞTİRMEYİ UNUTMAYIN!
-app.config['SECRET_KEY'] = 'BURAYI_KENDI_GUVENLI_ANAHTARINIZLA_DEGISTIRIN' 
 
+# --- BLOG KLASÖRÜ ---
+BLOG_DIR = os.path.join(app.root_path, 'blog_posts')
+if not os.path.exists(BLOG_DIR):
+    os.makedirs(BLOG_DIR)
+
+# --- VERİTABANI ---
 db = SQLAlchemy(app)
-migrate = Migrate(app, db) 
-# ----------------------------------------
+migrate = Migrate(app, db)
 
+# --- BLOG MODELİ ---
+class BlogPost(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(200), nullable=False)
+    slug = db.Column(db.String(200), unique=True, nullable=False)
+    content = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
+
+# --- FLASK-LOGIN ---
 login_manager = LoginManager()
 login_manager.init_app(app)
-login_manager = LoginManager()
-login_manager.init_app(app)
-# Giriş yapılmamışsa login sayfasına yönlendir
-login_manager.login_view = 'login' 
+login_manager.login_view = 'login'
 login_manager.login_message = "Lütfen bu sayfaya erişmek için giriş yapınız."
 login_manager.login_message_category = "warning"
 
@@ -111,6 +119,7 @@ class Mission(db.Model):
 
     def __repr__(self):
         return f'<Mission {self.title}>'
+
 
 # GÖREV TAMAMLAMA MODELİ (UserTask'ın yeni adı UserMission)
 class UserMission(db.Model):
@@ -530,6 +539,51 @@ ADA_REHBERI_YERI = [
     },
 ]
 # ----------------------------------------------------
+@app.route('/blog')
+def blog_list():
+    posts = []
+    for filename in os.listdir(BLOG_DIR):
+        if filename.endswith('.md'):
+            slug = filename[:-3]  # .md uzantısını kaldır
+            filepath = os.path.join(BLOG_DIR, filename)
+            created_at = datetime.fromtimestamp(os.path.getmtime(filepath))  # dosyanın oluşturulma/değişme zamanı
+            with open(filepath, 'r', encoding='utf-8') as f:
+                first_line = f.readline().strip()
+            posts.append({
+                'title': first_line.replace('#', '').strip(),
+                'slug': slug,
+                'created_at': created_at
+            })
+    # Tarihe göre sıralama (en yeni önce)
+    posts.sort(key=lambda x: x['created_at'], reverse=True)
+    return render_template('blog_list.html', posts=posts)
+
+
+
+@app.route('/blog/<slug>')
+def blog_post(slug):
+    filepath = os.path.join(BLOG_DIR, slug + '.md')
+    if not os.path.exists(filepath):
+        abort(404)
+    
+    with open(filepath, 'r', encoding='utf-8') as f:
+        lines = f.readlines()
+    
+    title = lines[0].replace('#', '').strip() if lines else 'Başlıksız'
+    content = ''.join(lines[1:]).strip() if len(lines) > 1 else ''
+    created_at = datetime.fromtimestamp(os.path.getmtime(filepath))  # Burayı ekledik
+
+    post = {
+        'title': title,
+        'content': content,
+        'slug': slug,
+        'created_at': created_at  # Burayı mutlaka gönder
+    }
+    
+    return render_template('blog_post.html', post=post)
+
+
+
 @app.route('/admin/delete_mission/<int:mission_id>', methods=['GET'])
 @login_required
 def delete_mission(mission_id):
@@ -547,6 +601,45 @@ def delete_mission(mission_id):
     
     flash(f"'{mission.title}' görevi başarıyla silindi.", "success")
     return redirect(url_for('admin_dashboard') + '#missions-management')
+
+@app.route('/admin/blog', methods=['GET', 'POST'])
+@login_required
+def admin_blog():
+    if not current_user.is_admin:
+        flash("Bu sayfaya erişim yetkiniz yok!", "danger")
+        return redirect(url_for('index'))
+
+    posts = BlogPost.query.order_by(BlogPost.created_at.desc()).all()
+    return render_template('admin_blog.html', posts=posts)
+@app.route('/admin/blog/new', methods=['GET', 'POST'])
+@login_required
+def new_blog_post():
+    if not current_user.is_admin:
+        flash("Bu sayfaya erişim yetkiniz yok!", "danger")
+        return redirect(url_for('index'))
+
+    if request.method == 'POST':
+        title = request.form['title']
+        content = request.form['content']
+        slug = title.lower().replace(" ", "-")  # basit slug
+        post = BlogPost(title=title, content=content, slug=slug, author_id=current_user.id)
+        db.session.add(post)
+        db.session.commit()
+        flash("Yeni blog yazısı eklendi!", "success")
+        return redirect(url_for('admin_blog'))
+
+    return render_template('new_blog_post.html')
+
+@app.route('/blog')
+def blog_index():
+    posts = BlogPost.query.filter_by(is_published=True).order_by(BlogPost.created_at.desc()).all()
+    return render_template('blog_index.html', posts=posts)
+
+@app.route('/blog/<slug>')
+def blog_detail(slug):
+    post = BlogPost.query.filter_by(slug=slug, is_published=True).first_or_404()
+    return render_template('blog_detail.html', post=post)
+
 
 @app.route("/etkinlik1")
 def etkinlik1():

@@ -518,10 +518,10 @@ ADA_REHBERI_YERI = [
         'gorsel_path': 'ada_rehberi/manastir.jpg', # static/ada_rehberi/manastir.jpg
     },
     {
-        'id': 'mavikoy',
+        'id': 'Mavikoy',
         'ad': 'Mavikoy Akvaryum Koyu',
         'aciklama': 'Adı gibi MASMAVİ… Doğanın kendi filtresiyle boyadığı, berraklığıyla içini ferahlatan bir koy burası. Kayalıkların arasında saklanan bu koy, sakinlik arayanlara gizli bir kaçış gibi. Deniz o kadar temiz ki, suyun içindeki her ayrıntıyı görebiliyorsun. Geldiğinde sadece denize değil, kendine de dalıyorsun aslında.',
-        'gorsel_path': 'ada_rehberi/buyukliman.jpg', # static/ada_rehberi/buyukliman.jpg
+        'gorsel_path': 'ada_rehberi/buyukliman.jpg', # static/ada_rehberi/mavikoy.jpg
     },
 {
         'id': 'sarap', # Sadece tanımlayıcı, küçük ve İngilizce benzeri bir isim verin.

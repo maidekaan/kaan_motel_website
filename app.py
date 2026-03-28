@@ -5,7 +5,7 @@ from functools import wraps
 
 from flask import (
     Flask, render_template, request, redirect, url_for,
-    flash, abort, session, jsonify, Response
+    flash, abort, session, jsonify, Response, send_from_directory
 )
 
 from flask_sqlalchemy import SQLAlchemy
@@ -563,9 +563,6 @@ def inject_globals():
     }
 
 
-@app.route('/google7e356096ec55f89d.html')
-def google_verification():
-    return app.send_static_file('google7e356096ec55f89d.html')
 
 @app.route("/")
 def index():
@@ -632,6 +629,10 @@ def api_calculate_price():
         "nights": nights
     })
 
+
+@app.route('/google7e356096ec55f89d.html')
+def google_verification():
+    return send_from_directory('static', 'google7e356096ec55f89d.html')
 
 @app.route("/galeri")
 def galeri():

@@ -563,6 +563,10 @@ def inject_globals():
     }
 
 
+@app.route('/google7e356096ec55f89d.html')
+def google_verification():
+    return app.send_static_file('google7e356096ec55f89d.html')
+
 @app.route("/")
 def index():
     seo = build_seo(

@@ -4,20 +4,21 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>{{ title | default('Kaan Motel - Avşa Adası') }}</title>
+    <title>{{ title | default('Avşa Kaan Motel | Butik Otel & Workspace') }}</title>
     <meta name="description" content="{{ description | default('Kaan Motel, Avşa Adası’nda huzurlu, samimi ve konforlu konaklama sunar.') }}">
     <meta name="keywords" content="Avşa otelleri, Avşa otel fiyatları, Avşa'da nerede kalınır, Avşa Adası otel, Avşa motel, butik otel Avşa">
     <meta name="author" content="Kaan Motel">
     <meta name="robots" content="index, follow">
     <meta name="language" content="Turkish">
 
-    <link rel="canonical" href="{{ request.url }}">
+    <link rel="canonical" href="{{ request.base_url }}">
 
-    <meta property="og:title" content="{{ title | default('Kaan Motel - Avşa Adası') }}">
+    <meta property="og:title" content="{{ title | default('Avşa Kaan Motel | Butik Otel & Workspace') }}">
     <meta property="og:description" content="{{ description | default('Kaan Motel, Avşa Adası’nda huzurlu, samimi ve konforlu konaklama sunar.') }}">
     <meta property="og:image" content="{{ url_for('static', filename='kaan_logo.png', _external=True) }}">
     <meta property="og:url" content="{{ request.url }}">
     <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Avşa Kaan Motel">
 
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="{{ title | default('Kaan Motel - Avşa Adası') }}">
@@ -250,9 +251,9 @@
     <div class="container">
         <a class="navbar-brand" href="{{ url_for('index') }}">
             <div class="navbar-brand-wrap">
-                <img src="{{ url_for('static', filename='kaan_logo.png') }}" alt="Kaan Motel Logo" class="navbar-logo">
+                <img src="{{ url_for('static', filename='kaan_logo.png') }}" alt="Avşa Kaan Motel Logo" class="navbar-logo">
                 <div>
-                    <div class="brand-title">Kaan Motel</div>
+                    <div class="brand-title">Avşa Kaan Motel</div>
                     <div class="brand-subtitle">Avşa Adası'nda Huzurlu Kaçış Noktanız</div>
                 </div>
             </div>
@@ -313,7 +314,7 @@
 
 <footer class="site-footer py-5">
     <div class="container text-center">
-        <div class="footer-title mb-2">Kaan Motel</div>
+        <div class="footer-title mb-2">Avşa Kaan Motel</div>
         <p class="mb-2">Avşa Adası’nda sade, huzurlu ve samimi bir butik konaklama deneyimi.</p>
         <p class="mb-2">
             <strong>Telefon:</strong> <a href="tel:{{ contact_info.phone_raw }}">{{ contact_info.phone }}</a><br>
@@ -346,7 +347,7 @@
 {
   "@context": "https://schema.org",
   "@type": "Hotel",
-  "name": "Kaan Motel",
+  "name": "Avşa Kaan Motel",
   "image": "{{ url_for('static', filename='kaan_logo.png', _external=True) }}",
   "address": {
     "@type": "PostalAddress",

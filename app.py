@@ -5,8 +5,9 @@ from functools import wraps
 
 from flask import (
     Flask, render_template, request, redirect, url_for,
-    flash, abort, session, jsonify
+    flash, abort, session, jsonify, Response
 )
+
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from sqlalchemy import and_
@@ -21,16 +22,15 @@ db = SQLAlchemy(app)
 migrate = Migrate(app, db)
 
 CONTACT_INFO = {
-    "address": "Deniz Mahallesi, Değirmenardı Mevkii, Zafer Sokak No:6, Avşa Adası",
+    "address": "Deniz Mahallesi, Değirmenardı Mevkii, Zafer Sokak No:10, Avşa Adası",
     "phone": "+90 553 889 85 44",
     "phone_raw": "905538898544",
-    "email": "avsakaanmotel@gmail.com",
+    "email": "kaanmotelavsa@gmail.com",
     "whatsapp_link": (
         "https://wa.me/905538898544"
         "?text=Merhaba%20Kaan%20Motel,%20rezervasyon%20hakk%C4%B1nda%20bilgi%20almak%20istiyorum."
     ),
-    "instagram": "https://instagram.com/kaanmotel",
-    "facebook": "https://facebook.com/",
+    "instagram": "https://instagram.com/avsakaanmotel",
     "maps_embed": (
         "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3032.958911929898!"
         "2d27.495157275155798!3d40.520399249324505!2m3!1f0!2f0!3f0!"
@@ -329,9 +329,9 @@ def load_room_data_from_static():
                 main_image_path = file_url
 
             gallery_images.append({
-    	    "title": filename.rsplit(".", 1)[0].replace("_", " ").title(),
-    	    "path": file_url
-	    })
+                "title": f"{room_meta['name']} Görsel {len(gallery_images) + 1}",
+                "path": file_url
+            })
 
         if not main_image_path and gallery_images:
             main_image_path = gallery_images[0]["path"]
@@ -1065,6 +1065,57 @@ def yonetim_rezervasyon_durum(reservation_id):
     flash("Rezervasyon durumu güncellendi.", "success")
     return redirect(url_for("yonetim"))
 
+
+@app.route("/robots.txt")
+def robots_txt():
+    robots_path = os.path.join(app.root_path, "static", "robots.txt")
+    if os.path.exists(robots_path):
+        with open(robots_path, "r", encoding="utf-8") as f:
+            return Response(f.read(), mimetype="text/plain")
+    return Response("User-agent: *\nAllow: /\n", mimetype="text/plain")
+
+
+@app.route("/sitemap.xml", methods=["GET"])
+def sitemap():
+    pages = []
+
+    static_routes = [
+        ("index", {}),
+        ("galeri", {}),
+        ("odalar", {}),
+        ("konum_iletisim", {}),
+        ("rezervasyon_formu", {}),
+        ("yat_klubu", {}),
+        ("kvkk", {}),
+    ]
+
+    today = date.today().isoformat()
+
+    for route_name, params in static_routes:
+        try:
+            pages.append({
+                "loc": url_for(route_name, _external=True, **params),
+                "lastmod": today,
+                "changefreq": "weekly",
+                "priority": "0.8"
+            })
+        except Exception:
+            pass
+
+    try:
+        oda_verileri = load_room_data_from_static()
+        for room in oda_verileri:
+            pages.append({
+                "loc": url_for("oda_detay", room_id=room["id"], _external=True),
+                "lastmod": today,
+                "changefreq": "weekly",
+                "priority": "0.7"
+            })
+    except Exception:
+        pass
+
+    xml = render_template("sitemap.xml", pages=pages)
+    return Response(xml, mimetype="application/xml")
 
 @app.route("/kvkk")
 def kvkk():

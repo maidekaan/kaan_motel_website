@@ -1,69 +1,695 @@
 {% extends "base.html" %}
-{% set title = "Avşa Kaan Motel | Avşa Adası Butik Otel, Sessiz Konaklama & Work Stay" %}
+{% set title = "Kaan Motel | Avşa Otelleri Arasında Huzurlu ve Samimi Konaklama" %}
+
+{% block head %}
+<style>
+    .hero-section {
+        min-height: 92vh;
+        background:
+            linear-gradient(rgba(34, 30, 26, 0.38), rgba(34, 30, 26, 0.45)),
+            url('{{ url_for("static", filename="images/hero_placeholder.jpg") }}');
+        background-size: cover;
+        background-position: center;
+        display: flex;
+        align-items: center;
+        color: #fff;
+        text-align: center;
+        position: relative;
+    }
+
+    .hero-section::after {
+        content: "";
+        position: absolute;
+        inset: auto 0 0 0;
+        height: 120px;
+        background: linear-gradient(to top, #f8f4ec, transparent);
+    }
+
+    .hero-content {
+        position: relative;
+        z-index: 2;
+    }
+
+    .hero-content h1 {
+        font-family: 'Cormorant Garamond', serif;
+        font-size: 4rem;
+        font-weight: 700;
+        margin-bottom: 18px;
+        letter-spacing: 0.4px;
+    }
+
+    .hero-content p {
+        max-width: 820px;
+        margin: 0 auto 30px auto;
+        font-size: 1.08rem;
+        line-height: 1.9;
+    }
+
+    .hero-buttons .btn {
+        margin: 8px;
+        padding: 14px 28px;
+        border-radius: 999px;
+        font-weight: 700;
+        border: none;
+    }
+
+    .btn-main {
+        background: #b7754f;
+        color: #fff;
+        box-shadow: 0 12px 25px rgba(183, 117, 79, 0.24);
+    }
+
+    .btn-main:hover {
+        background: #a46440;
+        color: #fff;
+    }
+
+    .btn-soft {
+        background: rgba(255,255,255,0.12);
+        color: #fff;
+        border: 1px solid rgba(255,255,255,0.35) !important;
+    }
+
+    .btn-soft:hover {
+        background: rgba(255,255,255,0.2);
+        color: #fff;
+    }
+
+    .boho-card,
+    .review-card,
+    .gallery-card,
+    .reservation-box,
+    .contact-box,
+    .feature-card {
+        background: rgba(255,255,255,0.7);
+        border: 1px solid rgba(111, 140, 148, 0.12);
+        border-radius: 24px;
+        box-shadow: 0 16px 40px rgba(44, 42, 40, 0.06);
+        backdrop-filter: blur(6px);
+    }
+
+    .about-image img,
+    .gallery-card img {
+        width: 100%;
+        border-radius: 24px;
+        object-fit: cover;
+        box-shadow: 0 16px 40px rgba(44, 42, 40, 0.08);
+    }
+
+    .about-image img {
+        height: 460px;
+    }
+
+    .about-text p {
+        line-height: 1.95;
+        color: #5e5953;
+    }
+
+    .feature-card {
+        padding: 30px 22px;
+        height: 100%;
+        text-align: center;
+    }
+
+    .feature-card .icon {
+        font-size: 2rem;
+        display: block;
+        margin-bottom: 15px;
+    }
+
+    .feature-card h4 {
+        font-family: 'Cormorant Garamond', serif;
+        font-size: 1.5rem;
+        font-weight: 700;
+        margin-bottom: 12px;
+    }
+
+    .feature-card p {
+        color: #645d57;
+        margin-bottom: 0;
+    }
+
+    .gallery-card {
+        overflow: hidden;
+    }
+
+    .gallery-card img {
+        height: 270px;
+    }
+
+    .review-card {
+        padding: 30px 24px;
+        height: 100%;
+    }
+
+    .review-source {
+        font-family: 'Cormorant Garamond', serif;
+        font-size: 1.55rem;
+        font-weight: 700;
+        margin-bottom: 10px;
+    }
+
+    .review-score {
+        color: #b7754f;
+        font-weight: 700;
+        margin-bottom: 14px;
+    }
+
+    .review-slider-card {
+        position: relative;
+        overflow: hidden;
+        min-height: 320px;
+    }
+
+    .review-slider {
+        position: relative;
+        min-height: 105px;
+    }
+
+    .review-slide {
+        display: none;
+        animation: fadeReview 0.45s ease;
+    }
+
+    .review-slide.active {
+        display: block;
+    }
+
+    .review-controls {
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+        margin-top: 18px;
+    }
+
+    .review-nav {
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        border: none;
+        background: rgba(183, 117, 79, 0.12);
+        color: #8f5434;
+        transition: all 0.2s ease;
+    }
+
+    .review-nav:hover {
+        background: #b7754f;
+        color: #fff;
+    }
+
+    .review-dots {
+        display: flex;
+        justify-content: center;
+        gap: 8px;
+        margin-top: 16px;
+    }
+
+    .review-dots .dot {
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+        background: rgba(183, 117, 79, 0.25);
+        display: inline-block;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .review-dots .dot.active {
+        background: #b7754f;
+        transform: scale(1.15);
+    }
+
+    .contact-box,
+    .reservation-box {
+        padding: 34px;
+        height: 100%;
+    }
+
+    .reservation-form .form-control,
+    .reservation-form select {
+        height: 52px;
+        border-radius: 14px;
+        border: 1px solid rgba(111, 140, 148, 0.15);
+    }
+
+    .price-preview-box {
+        background: #f1e7d7;
+        color: #7b5a40;
+        border-radius: 18px;
+        padding: 16px 18px;
+        margin-bottom: 18px;
+    }
+
+    .price-preview-box strong {
+        color: #b7754f;
+        font-size: 1.15rem;
+    }
+
+    .reservation-note {
+        font-size: 0.95rem;
+        color: #6a645d;
+        margin-top: 14px;
+    }
+
+    @keyframes fadeReview {
+        from {
+            opacity: 0;
+            transform: translateY(6px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @media (max-width: 991px) {
+        .hero-content h1 {
+            font-size: 2.8rem;
+        }
+
+        .about-image img {
+            height: 320px;
+        }
+    }
+
+    @media (max-width: 767px) {
+        .hero-content h1 {
+            font-size: 2.3rem;
+        }
+
+        .hero-content p {
+            font-size: 1rem;
+        }
+    }
+</style>
+{% endblock %}
 
 {% block content %}
 
-    <section class="hero-section" style="background-image: url('{{ url_for('static', filename='images/hero_placeholder.jpg') }}');">
-        <div class="hero-overlay">
-            <div class="container">
-                <h2>{{ slogan }}</h2>
-                <p>Avşa Adası’nda butik konaklama sunan Kaan Motel, sessiz ve huzurlu atmosferiyle hem tatil yapmak hem de uzaktan çalışmak isteyenler için ideal bir deneyim sunar.</p>
-                
-                {# WHATSAPP REZERVASYON BUTONU - SADECE WHATSAPP'A YÖNLENDİRİR #}
-                <a href="https://wa.me/905538898544?text=Merhaba%20Kaan%20Motel,%20rezervasyon%20yapmak%20istiyorum." 
-                   target="_blank" 
-                   class="btn-lg btn-rezervasyon"
-                   onclick="event.stopPropagation(); window.open(this.href, '_blank'); return false;">
-                    <i class="fab fa-whatsapp"></i> İletişime Geç
+<section id="anasayfa" class="hero-section">
+    <div class="container">
+        <div class="hero-content">
+            <h1>Avşa’da Huzurlu Bir Konaklama Deneyimi</h1>
+            <p>
+                Kaan Motel, Avşa otelleri arasında samimi atmosferi, sade şıklığı ve denize yakın konumuyla öne çıkar.
+                Avşa otel fiyatları ve rahat konaklama seçenekleri araştıran misafirler için sıcak, temiz ve kullanışlı bir alternatif sunar.
+            </p>
+
+            <div class="hero-buttons">
+                <a href="{{ contact_info.whatsapp_link }}" target="_blank" class="btn btn-main">
+                    <i class="fab fa-whatsapp mr-2"></i>WhatsApp ile Ulaşın
                 </a>
-                
+                <a href="#rezervasyon" class="btn btn-soft">Rezervasyon Yapın</a>
+                <a href="{{ url_for('odalar') }}" class="btn btn-soft">Odaları İnceleyin</a>
             </div>
         </div>
-    </section>
+    </div>
+</section>
 
-    <section class="about-section">
-        <div class="container">
-            <div class="about-content">
-                <h3>Sakinliğe Hoş Geldiniz!</h3>
-                <p>Kaan Motel, Avşa Adası'nın deniz kenarında, yemyeşil bahçesi içinde, gürültüden uzak ve samimi bir konaklama deneyimi sunar. Lüksün karmaşası yerine, doğallığı ve sakinliği ön planda tutan konseptimizle kendinizi evinizde gibi hissedeceksiniz. Biz sadece bir motel değil, huzurunuzun başladığı yeriz.</p>
-                <p>İster özel bahçemizde kitabınızı okuyun, ister hemen önümüzdeki denizin tadını çıkarın. Bizimle geçireceğiniz her an, bir sonraki tatilinizin başlangıcı olacak.</p>
-                
-                {# ODALARA GİDEN BUTON #}
-                <a href="{{ url_for('odalar') }}" class="btn-secondary">Odaları Keşfet</a>
-                
+<section id="hakkimizda">
+    <div class="container">
+        <div class="text-center mb-5">
+            <h2 class="section-title">Hakkımızda</h2>
+            <p class="section-subtitle">
+                Avşa’da nerede kalınır diye düşünen misafirler için Kaan Motel; huzurlu, sade ve samimi bir butik konaklama deneyimi sunar.
+            </p>
+        </div>
+
+        <div class="row align-items-center">
+            <div class="col-lg-6 mb-4 mb-lg-0">
+                <div class="about-text boho-card p-4 p-lg-5">
+                    <p>
+                        Kaan Motel, Avşa Adası’nda büyük otel kalabalığından uzak, daha sıcak ve daha rahat bir atmosfer arayan misafirler için hazırlanmıştır.
+                        Denize yakın konumu, ferah odaları ve kolay iletişim imkanıyla tatilinizi keyifli hale getirir.
+                    </p>
+                    <p>
+                        İster kısa bir hafta sonu kaçamağı, ister uzun bir yaz tatili planlayın; sade ama özenli konaklama anlayışımızla sizi rahat ettirmeyi hedefliyoruz.
+                    </p>
+                    <p class="mb-0">
+                        Avşa otel fiyatları, oda seçenekleri ve hızlı rezervasyon için bizimle doğrudan iletişime geçebilir, size en uygun tarihleri kolayca öğrenebilirsiniz.
+                    </p>
+                </div>
             </div>
-            <div class="about-image">
-                <img src="{{ url_for('static', filename='images/about_placeholder.jpg') }}" alt="Kaan Motel Bahçe Manzarası">
+
+            <div class="col-lg-6">
+                <div class="about-image">
+                    <img src="{{ url_for('static', filename='images/about_placeholder.jpg') }}" alt="Kaan Motel bahçe ve tesis görünümü">
+                </div>
             </div>
         </div>
-    </section>
+    </div>
+</section>
 
-    <section class="services-preview">
-        <div class="container">
-            <h3>Sizi Neler Bekliyor?</h3>
-            <div class="service-cards">
-                <div class="card">
+<section id="hizmetler">
+    <div class="container">
+        <div class="text-center mb-5">
+            <h2 class="section-title">Sizi Neler Bekliyor?</h2>
+            <p class="section-subtitle">
+                Konforlu ve huzurlu bir Avşa tatili için öne çıkan özelliklerimiz.
+            </p>
+        </div>
+
+        <div class="row">
+            <div class="col-md-6 col-lg-3 mb-4">
+                <div class="feature-card">
                     <span class="icon">🌿</span>
                     <h4>Yemyeşil Bahçe</h4>
                     <p>Avşa'da nadir bulunan, size özel geniş ve huzurlu bir bahçe keyfi.</p>
                 </div>
-                <div class="card">
+            </div>
+
+            <div class="col-md-6 col-lg-3 mb-4">
+                <div class="feature-card">
                     <span class="icon">🐾</span>
                     <h4>Pet Dostu Konaklama</h4>
                     <p>Patili dostlarınızı da ağırlamaktan mutluluk duyuyoruz. Özel odamızı keşfedin!</p>
                 </div>
-                <div class="card">
+            </div>
+
+            <div class="col-md-6 col-lg-3 mb-4">
+                <div class="feature-card">
                     <span class="icon">🌊</span>
                     <h4>Denize 30 metre Mesafe</h4>
                     <p>Deniz hemen kapınızın önünde. Sadece birkaç adımda masmavi sulara ulaşın.</p>
                 </div>
-                <div class="card">
+            </div>
+
+            <div class="col-md-6 col-lg-3 mb-4">
+                <div class="feature-card">
                     <span class="icon">🏠</span>
                     <h4>Samimi Atmosfer</h4>
                     <p>Büyük otel karmaşası yok; sadece sıcak ve kişiselleştirilmiş bir misafirperverlik.</p>
-                </p>
+                </div>
             </div>
         </div>
-    </section>
-    
+    </div>
+</section>
+
+<section id="galeri">
+    <div class="container">
+        <div class="text-center mb-5">
+            <h2 class="section-title">Galeriden Kareler</h2>
+            <p class="section-subtitle">
+                Kaan Motel’in odalarını, bahçesini ve sakin atmosferini fotoğraflarla keşfedin.
+            </p>
+        </div>
+
+        <div class="row">
+            {% for item in featured_gallery %}
+            <div class="col-md-6 col-lg-4 mb-4">
+                <div class="gallery-card">
+                    <img src="{{ item.path }}" alt="{{ item.title }}">
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="text-center mt-3">
+            <a href="{{ url_for('galeri') }}" class="btn btn-main">Tüm Galeriyi Gör</a>
+        </div>
+    </div>
+</section>
+
+<section id="yorumlar">
+    <div class="container">
+        <div class="text-center mb-5">
+            <h2 class="section-title">Misafir Yorumları</h2>
+            <p class="section-subtitle">
+                Airbnb, Google ve Tripadvisor üzerindeki yorumlarımızı kutular içinde kayarak inceleyebilirsiniz.
+            </p>
+        </div>
+
+        <div class="row">
+            {% for key in ['airbnb', 'google', 'tripadvisor'] %}
+            <div class="col-md-4 mb-4">
+                <div class="review-card review-slider-card">
+                    <div class="review-source">
+                        <i class="{{ reviews[key].icon_class }} mr-2"></i>{{ reviews[key].platform }}
+                    </div>
+                    <div class="review-score">★ {{ reviews[key].score }}</div>
+
+                    <div class="review-slider" data-review-slider="{{ key }}">
+                        {% for item in reviews[key]["items"] %}
+                        <div class="review-slide {% if loop.first %}active{% endif %}">
+                            <p class="mb-0">“{{ item }}”</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="review-controls">
+                        <button type="button" class="review-nav prev" data-target="{{ key }}">
+                            <i class="fas fa-chevron-left"></i>
+                        </button>
+                        <button type="button" class="review-nav next" data-target="{{ key }}">
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </div>
+
+                    <div class="review-dots" data-dots="{{ key }}">
+                        {% for item in reviews[key]["items"] %}
+                        <span class="dot {% if loop.first %}active{% endif %}" data-index="{{ loop.index0 }}"></span>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<section id="iletisim">
+    <div class="container">
+        <div class="text-center mb-5">
+            <h2 class="section-title">Konum & İletişim</h2>
+            <p class="section-subtitle">
+                Rezervasyon, fiyat bilgisi ve müsaitlik durumu için bize kolayca ulaşabilirsiniz.
+            </p>
+        </div>
+
+        <div class="row">
+            <div class="col-lg-5 mb-4">
+                <div class="contact-box">
+                    <h4 class="mb-4" style="font-family:'Cormorant Garamond', serif; font-size:1.9rem;">İletişim Bilgileri</h4>
+                    <p><strong>Adres:</strong><br>{{ contact_info.address }}</p>
+                    <p><strong>Telefon:</strong><br><a href="tel:{{ contact_info.phone_raw }}">{{ contact_info.phone }}</a></p>
+                    <p><strong>E-posta:</strong><br><a href="mailto:{{ contact_info.email }}">{{ contact_info.email }}</a></p>
+                    <p class="mb-0">
+                        <strong>WhatsApp:</strong><br>
+                        <a href="{{ contact_info.whatsapp_link }}" target="_blank">Hemen yazın</a>
+                    </p>
+                </div>
+            </div>
+
+            <div class="col-lg-7 mb-4">
+                <div class="contact-box p-0 overflow-hidden">
+                    <iframe
+                        src="{{ contact_info.maps_embed }}"
+                        width="100%"
+                        height="400"
+                        style="border:0;"
+                        allowfullscreen=""
+                        loading="lazy">
+                    </iframe>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section id="rezervasyon">
+    <div class="container">
+        <div class="text-center mb-5">
+            <h2 class="section-title">Rezervasyon Talebi</h2>
+            <p class="section-subtitle">
+                Tarih seçmeden önce gecelik başlangıç fiyatını görebilir, tarih seçtikten sonra toplam fiyatı anında öğrenebilirsiniz.
+            </p>
+        </div>
+
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div class="reservation-box">
+                    <div class="price-preview-box">
+                        <div>Seçilen Oda İçin Başlangıç Gecelik Fiyat:</div>
+                        <strong id="nightly-price-preview">-</strong>
+                        <div class="mt-2">Toplam Fiyat: <strong id="total-price-preview">Tarih seçiniz</strong></div>
+                    </div>
+
+                    <form action="{{ url_for('rezervasyon_yap') }}" method="POST" class="reservation-form" id="reservation-form">
+                        <div class="form-row">
+                            <div class="form-group col-md-6">
+                                <label>Giriş Tarihi</label>
+                                <input type="date" name="check_in" id="check_in" class="form-control" min="{{ today }}" required>
+                            </div>
+                            <div class="form-group col-md-6">
+                                <label>Çıkış Tarihi</label>
+                                <input type="date" name="check_out" id="check_out" class="form-control" min="{{ today }}" required>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group col-md-6">
+                                <label>Ad Soyad</label>
+                                <input type="text" name="guest_name" class="form-control" required>
+                            </div>
+                            <div class="form-group col-md-6">
+                                <label>E-posta</label>
+                                <input type="email" name="guest_email" class="form-control" required>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group col-md-6">
+                                <label>Telefon</label>
+                                <input type="text" name="guest_phone" class="form-control" required>
+                            </div>
+                            <div class="form-group col-md-6">
+                                <label>Oda Tipi</label>
+                                <select name="room_type" id="room_type" class="form-control" required>
+                                    <option value="">Seçiniz</option>
+                                    <option value="standart" data-preview="{{ preview_prices['standart'] }}">3 Kişilik Standart Oda</option>
+                                    <option value="suit" data-preview="{{ preview_prices['suit'] }}">Suit Oda</option>
+                                    <option value="petsuit" data-preview="{{ preview_prices['petsuit'] }}">Petsuit Oda</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group col-md-6">
+                                <label>Yetişkin</label>
+                                <input type="number" name="adults" class="form-control" min="1" value="1" required>
+                            </div>
+                            <div class="form-group col-md-6">
+                                <label>Çocuk</label>
+                                <input type="number" name="children" class="form-control" min="0" value="0">
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-main btn-block mt-3">
+                            Rezervasyon Talebi Gönder
+                        </button>
+
+                        <a href="{{ contact_info.whatsapp_link }}" target="_blank" class="btn btn-success btn-block mt-3">
+                            <i class="fab fa-whatsapp mr-2"></i>WhatsApp ile Hızlı İletişim
+                        </a>
+
+                        <div class="reservation-note">
+                            Fiyatlar sezon tarihine göre değişebilir. Yönetim panelinde tanımlanan güncel fiyatlar toplam tutara otomatik yansır.
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const sliderNames = ["airbnb", "google", "tripadvisor"];
+    const sliderState = {};
+
+    function showSlide(name, index) {
+        const slider = document.querySelector(`[data-review-slider="${name}"]`);
+        if (!slider) return;
+
+        const slides = slider.querySelectorAll(".review-slide");
+        const dotsWrap = document.querySelector(`[data-dots="${name}"]`);
+        if (!slides.length || !dotsWrap) return;
+
+        const dots = dotsWrap.querySelectorAll(".dot");
+
+        if (index < 0) index = slides.length - 1;
+        if (index >= slides.length) index = 0;
+
+        slides.forEach((slide, i) => slide.classList.toggle("active", i === index));
+        dots.forEach((dot, i) => dot.classList.toggle("active", i === index));
+        sliderState[name] = index;
+    }
+
+    sliderNames.forEach(name => {
+        sliderState[name] = 0;
+        const prevBtn = document.querySelector(`.review-nav.prev[data-target="${name}"]`);
+        const nextBtn = document.querySelector(`.review-nav.next[data-target="${name}"]`);
+        const dotsWrap = document.querySelector(`[data-dots="${name}"]`);
+        const slider = document.querySelector(`[data-review-slider="${name}"]`);
+        if (!slider || !dotsWrap) return;
+
+        const slides = slider.querySelectorAll(".review-slide");
+        const dots = dotsWrap.querySelectorAll(".dot");
+
+        if (prevBtn) prevBtn.addEventListener("click", () => showSlide(name, sliderState[name] - 1));
+        if (nextBtn) nextBtn.addEventListener("click", () => showSlide(name, sliderState[name] + 1));
+        dots.forEach((dot, index) => dot.addEventListener("click", () => showSlide(name, index)));
+
+        if (slides.length > 1) {
+            setInterval(() => showSlide(name, sliderState[name] + 1), 4500);
+        }
+    });
+
+    const roomTypeEl = document.getElementById("room_type");
+    const checkInEl = document.getElementById("check_in");
+    const checkOutEl = document.getElementById("check_out");
+    const nightlyEl = document.getElementById("nightly-price-preview");
+    const totalEl = document.getElementById("total-price-preview");
+
+    function formatTL(value) {
+        return new Intl.NumberFormat("tr-TR", {
+            maximumFractionDigits: 0
+        }).format(value) + " ₺";
+    }
+
+    async function refreshPrice() {
+        const roomType = roomTypeEl.value;
+        const checkIn = checkInEl.value;
+        const checkOut = checkOutEl.value;
+
+        if (!roomType) {
+            nightlyEl.textContent = "-";
+            totalEl.textContent = "Oda tipi seçiniz";
+            return;
+        }
+
+        try {
+            const params = new URLSearchParams({
+                room_type: roomType,
+                check_in: checkIn,
+                check_out: checkOut
+            });
+
+            const response = await fetch(`/api/calculate-price?${params.toString()}`);
+            const data = await response.json();
+
+            if (!data.ok) {
+                nightlyEl.textContent = "-";
+                totalEl.textContent = data.message || "Hesaplanamadı";
+                return;
+            }
+
+            if (data.nightly_price) {
+                nightlyEl.textContent = formatTL(data.nightly_price);
+            } else {
+                nightlyEl.textContent = "-";
+            }
+
+            if (data.total_price && data.nights > 0) {
+                totalEl.textContent = `${formatTL(data.total_price)} (${data.nights} gece)`;
+            } else {
+                totalEl.textContent = "Tarih seçiniz";
+            }
+        } catch (error) {
+            nightlyEl.textContent = "-";
+            totalEl.textContent = "Hesaplanamadı";
+        }
+    }
+
+    if (roomTypeEl && checkInEl && checkOutEl) {
+        roomTypeEl.addEventListener("change", refreshPrice);
+        checkInEl.addEventListener("change", refreshPrice);
+        checkOutEl.addEventListener("change", refreshPrice);
+        refreshPrice();
+    }
+});
+</script>
 {% endblock %}

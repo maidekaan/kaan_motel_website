@@ -1,1616 +1,1107 @@
 import os
-from flask import abort
-from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
+import calendar
+from datetime import datetime, date, timedelta
+from functools import wraps
+
+from flask import (
+    Flask, render_template, request, redirect, url_for,
+    flash, abort, session, jsonify
+)
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
-from sqlalchemy import cast, Integer
-from datetime import datetime
-from flask_login import login_required, current_user
-from markupsafe import Markup  # flask.Markup yerine
+from sqlalchemy import and_
 
-# Flask-Login ve diğer bağımlılıklar
-from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
-from werkzeug.security import generate_password_hash, check_password_hash
-from datetime import datetime, date, timedelta
-from sqlalchemy import and_, or_
-import calendar
-import markdown
-from sqlalchemy import UniqueConstraint
-
-ROOM_DISPLAY_NAMES = {
-    'STD01': 'Oda 1',
-    'STD02': 'Oda 2',
-    'STD03': 'Oda 3',
-    'STD04': 'Oda 4',
-    'SUI01': 'Suit',
-    'PET01': 'Oda 7',
-    'STD07': 'Oda 8',
-    'LSU01': 'Üst Kat',
-}
-
-# --- UYGULAMA AYARLARI ---
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'maidekaan91'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///sadakat.db'
+app.config["SECRET_KEY"] = "kaanmotel-2026-secret"
+app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///sadakat.db"
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+app.config["MANAGER_PASSWORD"] = "kaan2026"
 
-# --- BLOG KLASÖRÜ ---
-BLOG_DIR = os.path.join(app.root_path, 'blog_posts')
-if not os.path.exists(BLOG_DIR):
-    os.makedirs(BLOG_DIR)
-
-# --- VERİTABANI ---
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
 
-# --- BLOG MODELİ ---
-class BlogPost(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String(200), nullable=False)
-    slug = db.Column(db.String(200), unique=True, nullable=False)
-    content = db.Column(db.Text, nullable=False)
-    created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
+CONTACT_INFO = {
+    "address": "Deniz Mahallesi, Değirmenardı Mevkii, Zafer Sokak No:6, Avşa Adası",
+    "phone": "+90 553 889 85 44",
+    "phone_raw": "905538898544",
+    "email": "avsakaanmotel@gmail.com",
+    "whatsapp_link": (
+        "https://wa.me/905538898544"
+        "?text=Merhaba%20Kaan%20Motel,%20rezervasyon%20hakk%C4%B1nda%20bilgi%20almak%20istiyorum."
+    ),
+    "instagram": "https://instagram.com/kaanmotel",
+    "facebook": "https://facebook.com/",
+    "maps_embed": (
+        "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3032.958911929898!"
+        "2d27.495157275155798!3d40.520399249324505!2m3!1f0!2f0!3f0!"
+        "3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x14b419000f224301%3A0x4e6d88d0246a0cb6!"
+        "2sKaan%20Motel!5e0!3m2!1str!2str!4v1760429758683!5m2!1str!2str"
+    ),
+}
 
-# --- FLASK-LOGIN ---
-login_manager = LoginManager()
-login_manager.init_app(app)
-login_manager.login_view = 'login'
-login_manager.login_message = "Lütfen bu sayfaya erişmek için giriş yapınız."
-login_manager.login_message_category = "warning"
+REVIEWS = {
+    "airbnb": {
+        "platform": "Airbnb",
+        "score": "4.8 / 5",
+        "icon_class": "fab fa-airbnb",
+        "items": [
+            "Temiz, huzurlu ve ailece rahat edebileceğiniz bir yer. Konum çok iyiydi.",
+            "Odalar düzenliydi, ortam sakindi. Avşa’da kafa dinlemek için güzel bir seçim.",
+            "Ev sahibi çok ilgiliydi. Giriş süreci çok kolay ilerledi.",
+            "Bahçe alanı çok keyifliydi. Sessiz ve samimi bir atmosfer vardı."
+        ]
+    },
+    "google": {
+        "platform": "Google",
+        "score": "4.7 / 5",
+        "icon_class": "fab fa-google",
+        "items": [
+            "İletişim çok hızlıydı, WhatsApp üzerinden kolayca bilgi alabildik.",
+            "Konumu güzel, odalar temiz, işletme ilgili. Tavsiye ederim.",
+            "Aile ortamı sevenler için çok uygun. Gürültüden uzak bir yer.",
+            "Fiyat performans açısından memnun kaldık. Tekrar gelebiliriz."
+        ]
+    },
+    "tripadvisor": {
+        "platform": "Tripadvisor",
+        "score": "4.6 / 5",
+        "icon_class": "fas fa-suitcase",
+        "items": [
+            "Sakin, temiz ve samimi bir konaklama deneyimi. Tekrar gelmek isteriz.",
+            "Kısa tatil için tercih ettik, gayet memnun kaldık.",
+            "Denize yakınlık ve huzurlu atmosfer en sevdiğimiz tarafı oldu.",
+            "Odalar düzenliydi, işletme çözüm odaklıydı ve iletişim çok rahattı."
+        ]
+    }
+}
 
-# --- GENEL SABİT VERİLER ---
+ROOM_DEFINITIONS = {
+    "standart": {
+        "name": "3 Kişilik Standart Oda",
+        "description": "Avşa otelleri arasında temiz, sade ve konforlu bir standart oda seçeneği.",
+        "long_description": (
+            "3 Kişilik Standart Odamız, Avşa Adası'nda uygun fiyatlı ve huzurlu konaklama "
+            "araması yapan misafirler için ideal bir seçenektir. Ferah yapısı, kullanışlı düzeni "
+            "ve denize yakın konumuyla rahat bir tatil deneyimi sunar."
+        ),
+        "default_price": 3000,
+        "capacity": 3,
+        "folder_names": ["standart"],
+    },
+    "suit": {
+        "name": "Suit Oda",
+        "description": "Aileler ve arkadaş grupları için geniş ve rahat suit oda seçeneği.",
+        "long_description": (
+            "Suit Odamız, Avşa'da nerede kalınır diye araştıran misafirler için "
+            "geniş ve konforlu bir konaklama deneyimi sunar."
+        ),
+        "default_price": 5000,
+        "capacity": 5,
+        "folder_names": ["suit"],
+    },
+    "petsuit": {
+        "name": "Petsuit Oda",
+        "description": "Evcil hayvan dostu, geniş ve rahat konaklama seçeneği.",
+        "long_description": (
+            "Petsuit Odamız, patili dostlarıyla birlikte Avşa Adası tatili yapmak isteyen "
+            "misafirler için hazırlanmıştır."
+        ),
+        "default_price": 3800,
+        "capacity": 4,
+        "folder_names": ["pet-dostu", "petsuit"],
+    },
+}
 
-MOTEL_SLOGAN = "Kaan Motel: Avşa Adası'nda Huzurlu Kaçış Noktanız."
-KVKK_TEXT = """
-Kişisel Verilerin Korunması Kanunu (KVKK) gereğince, sitemizi kullanarak veya kayıt olarak bize sağladığınız kişisel verileriniz... (dsfdsbbcvcv)
-"""
+ROOM_ORDER = ["STD01", "STD02", "STD03", "STD04", "SUI01", "PET01", "STD07", "STD08"]
 
-NAV_LINKS = [
-    ('odalar', 'Odalar'),
-    ('galeri', 'Galeri'),
-    ('konum_iletisim', 'Konum & İletişim'),
-    ('ada_rehberi', 'Ada Rehberi'),
-    ('rezervasyon_formu', 'Rezervasyon Yap'), 
-    ('profil', 'Profilim'),
-    ('register', 'Kayıt Ol'),
+SOURCE_OPTIONS = [
+    "Website",
+    "Airbnb",
+    "WhatsApp",
+    "Instagram",
+    "Telefon",
+    "Booking",
+    "Diğer"
 ]
 
-# Odalar Sayfası Verileri
-ODALAR = [
-    {'kod': 'largesuit', 'ad': '3 Kişilik Standart Oda', 'vurgu': 'Otelimizin En Lüks ve Manzaralı Süiti', 'ozellikler': ['Özel Teras', 'Ekstra Büyük Oda', 'Tam Donanımlı Mutfak', 'Klima'], 'fiyat': 'Mevsime Göre Değişir', 'gorsel': 'suit_buyuk.jpg'},
-    {'kod': 'suit', 'ad': '5 Kişilik Suit Oda', 'vurgu': 'Romantik Kaçışlar İçin İdeal', 'ozellikler': ['Geniş Yaşam Alanı', 'Deniz Manzaralı Balkon', 'Mini Mutfak', 'Klima'], 'fiyat': 'Mevsime Göre Değişir', 'gorsel': 'suit_deluxe.jpg'},
-    {'kod': 'petsuit', 'ad': 'Pet Dostu Aile Odası', 'vurgu': 'Patili Dostunuzla Birlikte Huzurlu Tatil', 'ozellikler': ['4 Yatak', 'Geniş Oda', 'Özel Giriş', 'Mama/Su Kabı Seti', 'Klima'], 'fiyat': 'Mevsime Göre Değişir', 'gorsel': 'pet_dostu.jpg'}
-   ]
-
-# Oda kodlarını formu doldurmak için hazırlıyoruz
-ODA_TIPLERI_DICT = {oda['kod']: oda['ad'] for oda in ODALAR}
-
-# KULLANICI İSTEĞİNE ÖZEL TAKVİM GÖRÜNÜM İSİMLENDİRMESİ (KESİN LİSTE)
-CUSTOM_CALENDAR_NAMES = [
-    "Oda 1",
-    "Oda 2",
-    "Oda 3",
-    "Oda 4",
-    "Suit", 
-    "Oda 7",
-    "Oda 8",
-    "Üst Kat"
-]
-# TOPLAM 8 ODA VARSA BU LİSTEDE 8 İSİM OLMALIDIR.
-
-# --- VERİTABANI MODELLERİ (Tablo Tanımları) ---
-
-# Kullanıcı/Sadakat Modeli 
-# --- TEMİZLENMİŞ VE BİRLEŞTİRİLMİŞ MODELLER ---
-
-# --- VERİTABANI MODELLERİ (Tablo Tanımları) ---
-
-# --- MODEL SIRALAMASI DÜZELTİLDİ: İlişki Kurulan Sınıflar, User Sınıfından ÖNCE TANIMLANDI ---
-
-# GÖREV TANIM MODELİ
-# GÖREV TANIM MODELİ
-class Mission(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String(100), nullable=False)
-    description = db.Column(db.String(500), nullable=False)
-    points_reward = db.Column(db.Integer, nullable=False)
-    type = db.Column(db.String(50), nullable=False, default='REZERVASYON')
-    is_repeatable = db.Column(db.Boolean, default=False)
-    is_active = db.Column(db.Boolean, default=True)
-
-    def __repr__(self):
-        return f'<Mission {self.title}>'
+MONTH_NAMES_TR = {
+    1: "Ocak",
+    2: "Şubat",
+    3: "Mart",
+    4: "Nisan",
+    5: "Mayıs",
+    6: "Haziran",
+    7: "Temmuz",
+    8: "Ağustos",
+    9: "Eylül",
+    10: "Ekim",
+    11: "Kasım",
+    12: "Aralık"
+}
 
 
-# GÖREV TAMAMLAMA MODELİ (UserTask'ın yeni adı UserMission)
-class UserMission(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    mission_id = db.Column(db.Integer, db.ForeignKey('mission.id'), nullable=False)
-    completed_at = db.Column(db.DateTime, default=datetime.utcnow)
-    is_validated = db.Column(db.Boolean, default=False)
-    proof_data = db.Column(db.String(500), nullable=True)
-
-    __tablename__ = 'user_mission_completion'
-
-    # Backref çakışmasını önlemek için sadece relationship kullanıldı. 'user' referansı User modelinde ayarlanacak.
-    user = db.relationship('User', backref='mission_links') 
-    mission = db.relationship('Mission', backref=db.backref('completions', lazy=True))
-
-    __table_args__ = (
-        db.UniqueConstraint('user_id', 'mission_id', name='_user_mission_uc'),
-    )
-
-    def __repr__(self):
-        return f'<UserMission User:{self.user_id} Mission:{self.mission_id}>'
-
-# ÖDÜL TALEP MODELİ (ClaimedReward yerine Redemption kullanıldı)
-class Redemption(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    reward_id = db.Column(db.Integer, db.ForeignKey('reward.id'), nullable=False)
-    redemption_date = db.Column(db.DateTime, default=datetime.utcnow)
-    status = db.Column(db.String(50), default='Beklemede')
-    points_used = db.Column(db.Integer, nullable=False) 
-    
-    # Backref çakışmasını önlemek için sadece relationship kullanıldı.
-    user = db.relationship('User', backref='rewards_redeemed')
-    reward = db.relationship('Reward', backref=db.backref('redemptions', lazy=True))
-    
-    def __repr__(self):
-        return f'<Redemption User:{self.user_id} Reward:{self.reward_id}>'
-
-
-# KULLANICI/SADAKAT MODELİ (İlişki Modellerinden SONRA TANIMLANDI)
-class User(UserMixin, db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(80), unique=True, nullable=False)
-    email = db.Column(db.String(120), unique=True, nullable=False)
-    password_hash = db.Column(db.String(256), nullable=False)
-    
-    # --- İSİM/SOYİSİM ALANLARI (DÜZELTİLDİ) ---
-    first_name = db.Column(db.String(64)) 
-    last_name = db.Column(db.String(64))
-    # -------------------------------------------
-    
-    total_points = db.Column(db.Integer, default=0, nullable=False)
-    is_admin = db.Column(db.Boolean, default=False)
-    kvkk_consent = db.Column(db.Boolean, default=False, nullable=False)
-    
-    # İlişkiler: backref parametresi çakışmayı önlemek için KALDIRILDI
-    tasks = db.relationship('UserMission', lazy='dynamic') 
-    rewards_claimed = db.relationship('Redemption', lazy='dynamic')
-
-
-    def set_password(self, password):
-        self.password_hash = generate_password_hash(password, method='pbkdf2:sha256')
-
-    def check_password(self, password):
-        return check_password_hash(self.password_hash, password)
-
-    def __repr__(self):
-        if self.first_name and self.last_name:
-            return f'<User {self.username} ({self.first_name} {self.last_name})>'
-        return f'<User {self.username}>'
-
-def load_room_data_from_static():
-    """/static/rooms/ altındaki klasörleri okuyarak oda verilerini otomatik oluşturur."""
-    room_data = []
-    base_room_path = os.path.join(app.root_path, 'static', 'rooms')
-
-    if not os.path.exists(base_room_path):
-        return []
-
-    # Klasörleri (odaların ID'lerini) oku
-    for room_id in os.listdir(base_room_path):
-        room_dir = os.path.join(base_room_path, room_id)
-
-        if os.path.isdir(room_dir):
-            # Oda bilgilerini tanımla
-            if room_id == 'standart':
-                room_name = '3 Kişilik Standart Oda'
-                room_desc = 'Konforlu, ferah ve kullanışlı standart odamız.'
-                room_long_desc = 'Uygun fiyatlı konaklama arayanlar için idealdir.'
-                price = 1500
-                capacity = 3
-            elif room_id == 'suit':
-                room_name = '5 Kişilik Suit Oda'
-                room_desc = 'Geniş aileler için tasarlanmış lüks suit.'
-                room_long_desc = 'İki ayrı bölümlü geniş yaşam alanı sunar.'
-                price = 2800
-                capacity = 5
-            elif room_id == 'pet-dostu':
-                room_name = 'Pet Dostu Oda'
-                room_desc = 'Patili dostuyla tatil yapmak isteyen misafirlerimiz için özel oda.'
-                room_long_desc = (
-                    "Kaan Motel olarak, evcil hayvanlarıyla tatil yapmak isteyen misafirlerimiz için "
-                    "özel olarak hazırladığımız Pet Dostu Oda seçeneğimizde konforlu bir konaklama deneyimi sunuyoruz. "
-                    "Odamız 4 kişiliktir ve evcil dostlarınız için özel mama kabı, yatak ve güvenli alan bulunmaktadır."
-                )
-                price = 1500
-                capacity = 4
-            else:
-                continue  # Tanımlı olmayan klasörleri atla
-
-            # Klasördeki dosyaları oku
-            files = os.listdir(room_dir)
-            files.sort()  # Dosyaları alfabetik sırala
-
-            gallery_images = []
-            main_image_path = None
-
-            for filename in files:
-                if filename.lower() in ['main.jpg', 'main.png']:
-                    main_image_path = url_for('static', filename=f'rooms/{room_id}/{filename}')
-                elif filename.lower().endswith(('.png', '.jpg', '.jpeg')):
-                    gallery_images.append({
-                        'title': f"{room_name} Görsel {len(gallery_images) + 1}",
-                        'path': url_for('static', filename=f'rooms/{room_id}/{filename}')
-                    })
-
-
-
-
-
-            # ODA VERİSİNİ OLUŞTUR
-            if main_image_path: # Ana görsel varsa odayı listeye ekle
-                room_data.append({
-                    'id': room_id,
-                    'name': room_name,
-                    'description': room_desc,
-                    'long_description': room_long_desc,
-                    'price_per_night': price,
-                    'capacity': capacity,
-                    'main_image': main_image_path,
-                    'gallery_images': gallery_images
-                })
-                
-    return room_data
-# ÖDÜL TANIM MODELİ
-class Reward(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String(100), nullable=False)
-    description = db.Column(db.String(500), nullable=False)
-    points_cost = db.Column(db.Integer, nullable=False)
-    is_active = db.Column(db.Boolean, default=True)
-
-    def __repr__(self):
-        return f'<Reward {self.title}>'
-
-# KAMPANYA MODELİ
-class Campaign(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String(120), nullable=False)
-    description = db.Column(db.Text, nullable=False)
-    start_date = db.Column(db.Date, nullable=False)
-    end_date = db.Column(db.Date, nullable=False)
-    is_active = db.Column(db.Boolean, default=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    
-    def __repr__(self):
-        return f"<Campaign {self.title}>"
-
-# ODA MODELİ
 class Room(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    room_number = db.Column(db.String(10), unique=True, nullable=False)
+    room_number = db.Column(db.String(20), unique=True, nullable=False)
     room_type = db.Column(db.String(50), nullable=False)
     capacity = db.Column(db.Integer, default=2)
-    reservations = db.relationship('Reservation', backref='room_details', lazy=True)
+
+    reservations = db.relationship("Reservation", backref="room_details", lazy=True)
 
     def __repr__(self):
-        return f'<Room {self.room_number} - {self.room_type}>'
+        return f"<Room {self.room_number} - {self.room_type}>"
 
-# REZERVASYON MODELİ
+
 class Reservation(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    guest_name = db.Column(db.String(100), nullable=False)
+    guest_name = db.Column(db.String(120), nullable=False)
     guest_email = db.Column(db.String(120), nullable=False)
-    guest_phone = db.Column(db.String(20))
+    guest_phone = db.Column(db.String(30))
     check_in = db.Column(db.Date, nullable=False)
     check_out = db.Column(db.Date, nullable=False)
     adults = db.Column(db.Integer, default=1)
     children = db.Column(db.Integer, default=0)
     total_price = db.Column(db.Float, default=0.0)
-    
-    # DÜZELTİLDİ: nullable=True yapılarak Yat Kulübü (NULL) kayıtlarına izin verildi.
-    room_id = db.Column(db.Integer, db.ForeignKey('room.id'), nullable=True) 
-    
-    status = db.Column(db.String(20), default='Online Onay Bekliyor')
-    loyalty_points_awarded = db.Column(db.Integer, default=0)
+    room_id = db.Column(db.Integer, db.ForeignKey("room.id"), nullable=True)
+    status = db.Column(db.String(50), default="Yeni Talep")
+    source = db.Column(db.String(50), default="Website")
 
     def __repr__(self):
-        return f'<Reservation {self.id} | Oda: {self.room_id}>'
-
-# --- MODELLER SONU ---
-# --- YENİ OTOMATİK GALERİ YÜKLEME FONKSİYONU ---
-def get_gallery_items():
-    """Static/gallery klasöründeki tüm resimleri otomatik olarak yükler."""
-    gallery_list = []
-    
-    # Flask'ın statik klasörünün gerçek yolunu bulur
-    static_folder_path = os.path.join(app.root_path, 'static', 'gallery') 
-    
-    if not os.path.exists(static_folder_path):
-        return []
-
-    # Klasördeki dosyaları listeler
-    for filename in os.listdir(static_folder_path):
-        # Sadece resim dosyalarını dahil eder
-        if filename.lower().endswith(('.png', '.jpg', '.jpeg')):
-            gallery_list.append({
-                # Dosya adından başlık oluşturur
-                'title': filename.replace('_', ' ').title().rsplit('.', 1)[0], 
-                'description': f'Avşa Adası hatırası: {filename}.',
-                # Flask'ın URL oluşturma yolu
-                'path': url_for('static', filename=f'gallery/{filename}')
-            })
-            
-    gallery_list.sort(key=lambda x: x['title'])
-    
-    return gallery_list
-# app.py'de get_gallery_items fonksiyonunun hemen altına ekleyin
-
-def get_oda_verileri():
-    """Odaların verilerini url_for kullanarak dinamik olarak döndürür."""
-    # BURADAKİ KOD BLOKLARI ARTIK BİR FONKSİYON İÇİNDE OLDUĞU İÇİN 
-    # UYGULAMA BAĞLAMI HATASI VERMEYECEKTİR.
-    return [
-        {
-            'id': 'standart', 
-            'name': '3 Kişilik Standart Oda',
-            'description': 'Konforlu ve ferah bir standart oda.',
-            'long_description': '3 Kişilik Standart Odalarımız...',
-            'price_per_night': 1500,
-            'capacity': 3,
-            # url_for kullanımı ARTIK FONKSİYON İÇİNDE GÜVENLİDİR
-            'main_image': url_for('static', filename='gallery/goruntu_standart_1.jpg'), 
-            'gallery_images': [ 
-                {'title': 'Oda İçi Görünüm', 'path': url_for('static', filename='gallery/goruntu_standart_1.jpg')},
-                {'title': 'Banyo', 'path': url_for('static', filename='gallery/goruntu_standart_2.jpg')},
-                {'title': 'Balkon Manzarası', 'path': url_for('static', filename='gallery/goruntu_standart_3.jpg')}
-            ]
-        },
-        {
-            'id': 'suit',
-            'name': '5 Kişilik Suit Oda',
-            'description': 'Geniş aileler için iki ayrı bölümlü lüks suit.',
-            'long_description': '5 Kişilik Suit Odalarımız...',
-            'price_per_night': 2800,
-            'capacity': 5,
-            'main_image': url_for('static', filename='gallery/goruntu_suit_1.jpg'), 
-            'gallery_images': [
-                {'title': 'Oturma Alanı', 'path': url_for('static', filename='gallery/goruntu_suit_1.jpg')},
-                {'title': 'Ebeveyn Odası', 'path': url_for('static', filename='gallery/goruntu_suit_2.jpg')},
-                {'title': 'Geniş Balkon', 'path': url_for('static', filename='gallery/goruntu_suit_3.jpg')}
-            ]
-        }
-    ]
-
-# ... get_gallery_items fonksiyonu devam ediyor
-
-@login_manager.user_loader
-def load_user(user_id):
-    return User.query.get(int(user_id))
-
-# --- REZERVASYON MANTIK FONKSİYONU ---
-
-def check_availability(room_type_kod, check_in_date_str, check_out_date_str):
-    """
-    Belirtilen tarihlerde ve oda tipinde müsait oda olup olmadığını kontrol eder ve müsait odayı döndürür.
-    """
-    # 1. Tarih Formatlarını Ayarlama
-    try:
-        check_in = datetime.strptime(check_in_date_str, '%Y-%m-%d').date()
-        check_out = datetime.strptime(check_out_date_str, '%Y-%m-%d').date()
-    except ValueError:
-        return False, "Hata: Tarih formatı yanlış."
-
-    if check_in >= check_out:
-        return False, "Hata: Çıkış tarihi, giriş tarihinden sonra olmalıdır."
-    if check_in < date.today():
-        return False, "Hata: Geçmiş bir tarih seçilemez."
-    
-    # 2. İstenen Oda Tipindeki Tüm Odaları Bul
-    all_rooms_of_type = Room.query.filter_by(room_type=room_type_kod).all()
-    if not all_rooms_of_type:
-        return False, "Hata: İstenen oda tipi bulunamadı."
-        
-    # 3. Rezervasyon çakışması olan odaları bulma (Yalnızca onaylı/dolu rezervasyonları kontrol et)
-    clashing_reservations = Reservation.query.filter(
-        Reservation.room_id.in_([r.id for r in all_rooms_of_type]),
-        and_(
-            Reservation.check_out > check_in, 
-            Reservation.check_in < check_out, 
-            or_(
-                Reservation.status == 'Onaylandı',
-                Reservation.status == 'Telefon Onaylı',
-                Reservation.status == 'Giriş Yaptı'
-            )
-        )
-    ).all()
-    
-    # 4. Müsait Oda ID'sini bulma
-    booked_rooms_ids = {r.room_id for r in clashing_reservations}
-    available_room = None
-    
-    for room in all_rooms_of_type:
-        if room.id not in booked_rooms_ids:
-            available_room = room
-            break
-            
-    if available_room:
-        return True, available_room
-    else:
-        return False, f"Üzgünüz, {ODA_TIPLERI_DICT.get(room_type_kod, room_type_kod)} tipinde bu tarihlerde oda kalmadı."
+        return f"<Reservation {self.id} - {self.guest_name}>"
 
 
-# --- ZİYARETÇİ ROTALARI (URL Tanımları) ---
+class ManualBlock(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    guest_name = db.Column(db.String(120), nullable=True)
+    source = db.Column(db.String(50), default="Diğer")
+    check_in = db.Column(db.Date, nullable=False)
+    check_out = db.Column(db.Date, nullable=False)
+    room_id = db.Column(db.Integer, db.ForeignKey("room.id"), nullable=True)
+    is_full_hotel = db.Column(db.Boolean, default=False)
+    note = db.Column(db.Text, nullable=True)
 
-# app.py dosyanızdaki ZİYARETÇİ ROTALARI bloğuna ekleyin
+    room = db.relationship("Room", backref="manual_blocks")
 
-def get_oda_verileri():
-    """Odaların verilerini url_for kullanarak dinamik olarak döndürür."""
-    return [
-        {
-            'id': 'standart',
-            'name': '3 Kişilik Standart Oda',
-            'description': 'Konforlu, ferah ve kullanışlı standart odamız. Uygun fiyatlı konaklama arayanlar için idealdir.',
-            'long_description': 'Standart odamız, sade tasarımı ve konforlu donanımıyla misafirlerimize huzurlu bir konaklama deneyimi sunar. Balkonlu ve ferah bir yapıya sahiptir.',
-            'price_per_night': 1500,
-            'capacity': 3,
-            'main_image': url_for('static', filename='gallery/goruntu_standart_1.jpg'),
-            'gallery_images': [
-                {'title': 'Oda İçi Görünüm', 'path': url_for('static', filename='gallery/goruntu_standart_1.jpg')},
-                {'title': 'Banyo', 'path': url_for('static', filename='gallery/goruntu_standart_2.jpg')},
-                {'title': 'Balkon Manzarası', 'path': url_for('static', filename='gallery/goruntu_standart_3.jpg')}
-            ]
-        },
-        {
-            'id': 'suit',
-            'name': '5 Kişilik Suit Oda',
-            'description': 'Geniş aileler ve kalabalık gruplar için tasarlanmış, iki ayrı bölümlü lüks suitimiz.',
-            'long_description': 'Suit odamız, geniş oturma alanı, ayrı yatak odası ve ferah balkonuyla kalabalık aileler için mükemmel bir seçenektir.',
-            'price_per_night': 2800,
-            'capacity': 5,
-            'main_image': url_for('static', filename='gallery/goruntu_suit_1.jpg'),
-            'gallery_images': [
-                {'title': 'Oturma Alanı', 'path': url_for('static', filename='gallery/goruntu_suit_1.jpg')},
-                {'title': 'Ebeveyn Odası', 'path': url_for('static', filename='gallery/goruntu_suit_2.jpg')},
-                {'title': 'Geniş Balkon', 'path': url_for('static', filename='gallery/goruntu_suit_3.jpg')}
-            ]
-        },
-        {
-            'id': 'pet-dostu',
-            'name': 'Pet Dostu Oda',
-            'description': 'Patili dostuyla tatil yapmak isteyen misafirlerimiz için özel olarak tasarlandı.',
-            'long_description': """Kaan Motel olarak, evcil hayvanlarıyla tatil yapmak isteyen misafirlerimiz için özel olarak hazırladığımız Pet Dostu Oda seçeneğimizde konforlu bir konaklama deneyimi sunuyoruz. 
-Odamız, 4 kişilik kapasitesiyle hem aileler hem de dostlarıyla birlikte seyahat eden misafirlerimiz için idealdir. 
-Evcil dostlarınız için özel mama kabı, yatak ve güvenli alan bulunmaktadır.""",
-            'price_per_night': 1500,
-            'capacity': 4,
-            'main_image': url_for('static', filename='gallery/pet_dostu_1.jpg'),
-            'gallery_images': [
-                {'title': 'Pet Dostu Oda', 'path': url_for('static', filename='gallery/pet_dostu_1.jpg')},
-                {'title': 'Oda Detayı', 'path': url_for('static', filename='gallery/pet_dostu_2.jpg')},
-                {'title': 'Evcil Dost Alanı', 'path': url_for('static', filename='gallery/pet_dostu_3.jpg')}
-            ]
-        }
-    ]
-
- 
+    def __repr__(self):
+        return f"<ManualBlock {self.id}>"
 
 
+class PriceRule(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    room_type = db.Column(db.String(50), nullable=False)
+    start_date = db.Column(db.Date, nullable=False)
+    end_date = db.Column(db.Date, nullable=False)
+    nightly_price = db.Column(db.Float, nullable=False)
+    note = db.Column(db.String(255), nullable=True)
 
-       
-    
-# --- ADA REHBERİ VERİLERİ (app.py içine ekleyin) ---
-ADA_REHBERI_YERI = [
-    {
-        'id': 'altinkum',
-        'ad': 'Altınkum Plajı',
-        'aciklama': 'Masmavi denizi, yumuşacık altın rengi kumları ve gün batımında içten içe parlayan sahiliyle Altınkum… Avşa’nın en huzurlu ve keyifli duraklarından biri. Burada deniz sığ ve tertemiz; upuzun sahilde yürüyüp, şezlonga uzanıp, güneşi iliklerine kadar hissedebilirsin. İster sakin bir gün, ister müzik eşliğinde eğlence… Altınkum’da her ruh haline uygun bir köşe mutlaka var. Giden bilir: Bir kez gelince tekrar gelmek istersin.',
-        'gorsel_path': 'ada_rehberi/altinkum.jpg', # static/ada_rehberi/altinkum.jpg
-    },
-    {
-        'id': 'manastir',
-        'ad': 'Tarihi Manastır Kalıntıları',
-        'aciklama': 'Sessizliğin, denizin ve tarihin birbirine karıştığı huzurlu bir köşe: Manastır Koyu. Adını yüzyıllar önce burada bulunan eski bir manastırdan alıyor. Bugün geriye taş duvar izleri ve çokça sakinlik kalmış… Denizi tertemiz, kıyısı daha doğal ve kalabalıktan uzak. Dalga sesi eşliğinde günü yavaşlatmak isteyenlere birebir. Yanına kitap, güneş kremi ve huzur taşı; burada zaman biraz daha ağır akar.',
-        'gorsel_path': 'ada_rehberi/manastir.jpg', # static/ada_rehberi/manastir.jpg
-    },
-    {
-        'id': 'mavikoy',
-        'ad': 'Mavikoy Akvaryum Koyu',
-        'aciklama': 'Adı gibi MASMAVİ… Doğanın kendi filtresiyle boyadığı, berraklığıyla içini ferahlatan bir koy burası. Kayalıkların arasında saklanan bu koy, sakinlik arayanlara gizli bir kaçış gibi. Deniz o kadar temiz ki, suyun içindeki her ayrıntıyı görebiliyorsun. Geldiğinde sadece denize değil, kendine de dalıyorsun aslında.',
-        'gorsel_path': 'ada_rehberi/mavikoy.jpg', # static/ada_rehberi/mavikoy.jpg
-    },
-{
-        'id': 'sarap', # Sadece tanımlayıcı, küçük ve İngilizce benzeri bir isim verin.
-        'ad': 'Şarap Fabrikası ve Üzüm Bağları', # Sayfada görünecek Türkçe isim.
-        'aciklama': 'Adanın kalbi sadece denizde değil; güneşte olgunlaşan üzüm kokusunda saklı. Yamaçlarda sıralanan bağların arasında gezerken, rüzgar yaprakların arasından usulca konuşur sanki. Avşa’nın şarap kültürü de buradan doğuyor; her üzüm tanesi güneşten bir parça, adadan bir hatıra taşıyor. Huzur isteyenlere “gel biraz soluklan” diyen, yavaş yavaş yaşayan bir dünya. Avşa’nın ruhu sadece sahillerde değil; mahzenlerde saklı. Yılların biriktirdiği şarap kültürü, adanın güneşini ve rüzgarını kendi dilince anlatıyor burada. Tadım masalarında her kadeh bir hikaye… Üzümler bağdan gelir, ama şarap kupaya zarafet olarak dökülür. Rahat, sakin ve seçkin bir atmosfer. Damakta hafif bir meyve ve yaz hatırası…',
-        # Adım A'da yüklediğiniz ve isimlendirdiğiniz görselin yolunu buraya yazın.
-        'gorsel_path': 'ada_rehberi/sarap.jpg', 
-    },
-{
-        'id': 'disco', # Sadece tanımlayıcı, küçük ve İngilizce benzeri bir isim verin.
-        'ad': 'Gece Kulüpleri', # Sayfada görünecek Türkçe isim.
-        'aciklama': ' Ada geceleri burada başka parlar. Şık atmosfer, kaliteli müzik ve yaz akşamının hafif rüzgarı… Avşa’nın seçkin beach & club mekanlarında gece, güneş battıktan sonra asıl ritmini bulur. Loş ışıklar, denizin üstünde yansıyan city-chic bir enerji ve uzun sohbetlerin eşlik ettiği zarif bir gece akışı… Sessiz değil; ama gereksiz kalabalık da değil. Tam kararında. Tam senin gibi.',
-        # Adım A'da yüklediğiniz ve isimlendirdiğiniz görselin yolunu buraya yazın.
-        'gorsel_path': 'ada_rehberi/disco.jpg', 
-    },
-]
-# ----------------------------------------------------
-@app.route('/blog')
-def blog_list():
-    posts = []
-    for filename in os.listdir(BLOG_DIR):
-        if filename.endswith('.md'):
-            slug = filename[:-3]  # .md uzantısını kaldır
-            filepath = os.path.join(BLOG_DIR, filename)
-            created_at = datetime.fromtimestamp(os.path.getmtime(filepath))  # dosyanın oluşturulma/değişme zamanı
-            with open(filepath, 'r', encoding='utf-8') as f:
-                first_line = f.readline().strip()
-            posts.append({
-                'title': first_line.replace('#', '').strip(),
-                'slug': slug,
-                'created_at': created_at
-            })
-    # Tarihe göre sıralama (en yeni önce)
-    posts.sort(key=lambda x: x['created_at'], reverse=True)
-    return render_template('blog_list.html', posts=posts)
+    def __repr__(self):
+        return f"<PriceRule {self.room_type} {self.start_date}-{self.end_date}: {self.nightly_price}>"
 
 
+def manager_required(view_func):
+    @wraps(view_func)
+    def wrapped_view(*args, **kwargs):
+        if not session.get("manager_logged_in"):
+            flash("Bu alana erişmek için yönetim şifresi gerekli.", "warning")
+            return redirect(url_for("yonetim_login"))
+        return view_func(*args, **kwargs)
+    return wrapped_view
 
-@app.route('/blog/<slug>')
-def blog_post(slug):
-    filepath = os.path.join(BLOG_DIR, slug + '.md')
-    if not os.path.exists(filepath):
-        abort(404)
-    
-    with open(filepath, 'r', encoding='utf-8') as f:
-        lines = f.readlines()
-    
-    title = lines[0].replace('#', '').strip() if lines else 'Başlıksız'
-    content = ''.join(lines[1:]).strip() if len(lines) > 1 else ''
-    created_at = datetime.fromtimestamp(os.path.getmtime(filepath))  # Burayı ekledik
 
-    post = {
-        'title': title,
-        'content': content,
-        'slug': slug,
-        'created_at': created_at  # Burayı mutlaka gönder
+def normalize_room_type(room_type_value):
+    if not room_type_value:
+        return None
+
+    room_type_value = room_type_value.strip().lower()
+    aliases = {
+        "standart": "standart",
+        "suit": "suit",
+        "petsuit": "petsuit",
+        "pet-dostu": "petsuit",
+        "pet_dostu": "petsuit",
     }
-    
-    return render_template('blog_post.html', post=post)
+    return aliases.get(room_type_value, room_type_value)
 
 
-
-@app.route('/admin/delete_mission/<int:mission_id>', methods=['GET'])
-@login_required
-def delete_mission(mission_id):
-    if not current_user.is_admin:
-        flash("Bu işlem için yetkiniz yok.", "danger")
-        return redirect(url_for('admin_dashboard'))
-    
-    mission = Mission.query.get_or_404(mission_id)
-    
-    # Kullanıcı görev kayıtlarını da sil
-    UserMission.query.filter_by(mission_id=mission_id).delete()
-    
-    db.session.delete(mission)
-    db.session.commit()
-    
-    flash(f"'{mission.title}' görevi başarıyla silindi.", "success")
-    return redirect(url_for('admin_dashboard') + '#missions-management')
-
-@app.route('/admin/blog', methods=['GET', 'POST'])
-@login_required
-def admin_blog():
-    if not current_user.is_admin:
-        flash("Bu sayfaya erişim yetkiniz yok!", "danger")
-        return redirect(url_for('index'))
-
-    posts = BlogPost.query.order_by(BlogPost.created_at.desc()).all()
-    return render_template('admin_blog.html', posts=posts)
-@app.route('/admin/blog/new', methods=['GET', 'POST'])
-@login_required
-def new_blog_post():
-    if not current_user.is_admin:
-        flash("Bu sayfaya erişim yetkiniz yok!", "danger")
-        return redirect(url_for('index'))
-
-    if request.method == 'POST':
-        title = request.form['title']
-        content = request.form['content']
-        slug = title.lower().replace(" ", "-")  # basit slug
-        post = BlogPost(title=title, content=content, slug=slug, author_id=current_user.id)
-        db.session.add(post)
-        db.session.commit()
-        flash("Yeni blog yazısı eklendi!", "success")
-        return redirect(url_for('admin_blog'))
-
-    return render_template('new_blog_post.html')
-
-@app.route('/blog')
-def blog_index():
-    posts = BlogPost.query.filter_by(is_published=True).order_by(BlogPost.created_at.desc()).all()
-    return render_template('blog_index.html', posts=posts)
-
-@app.route('/blog/<slug>')
-def blog_detail(slug):
-    post = BlogPost.query.filter_by(slug=slug, is_published=True).first_or_404()
-    return render_template('blog_detail.html', post=post)
+def room_sort_key(room_obj):
+    if room_obj.room_number in ROOM_ORDER:
+        return ROOM_ORDER.index(room_obj.room_number)
+    return 999
 
 
-@app.route("/etkinlik1")
-def etkinlik1():
-    return render_template("etkinlik1.html")
+def get_room_display_name(room):
+    room_names = {
+        "STD01": "Oda 1",
+        "STD02": "Oda 2",
+        "STD03": "Oda 3",
+        "STD04": "Oda 4",
+        "SUI01": "Suit",
+        "PET01": "Petsuit",
+        "STD07": "Oda 7",
+        "STD08": "Oda 8",
+    }
+    return room_names.get(room.room_number, room.room_number)
 
-@app.route("/etkinlik2")
-def etkinlik2():
-    return render_template("etkinlik2.html")
 
-@app.route('/kvkk')
-def kvkk_metni():
-    # 'kvkk.html' dosyasını render eder
-    return render_template('kvkk.html')
-@app.route('/yat-klubu')
-def yat_klubu():
-    """Kaan Motel Yat Kulübü detay sayfasını yükler."""
-    
-    # Otomatik görsel yükleme fonksiyonunu çağırıyoruz
-    yat_klubu_data = load_yat_kulubu_data() 
-    
-    if yat_klubu_data is None:
-        # Eğer load_yat_kulubu_data None döndürdüyse (klasör/görsel bulunamadıysa)
-        # Not: hata.html dosyanızın mevcut olduğundan emin olun, yoksa başka bir hata alırsınız.
-        return render_template('hata.html', message="Yat Kulübü bilgileri yüklenemedi. Lütfen klasör yapısını ve görsellerin adını (main.jpg/png) kontrol ediniz.")
-    
-    # Veri başarıyla yüklendiyse, şablonu çağır
-    return render_template('yat_kulubu_detay.html', data=yat_klubu_data)
+def build_seo(title, description):
+    return {"title": title, "description": description}
+
+
+def get_default_price(room_type):
+    normalized = normalize_room_type(room_type)
+    return float(ROOM_DEFINITIONS.get(normalized, {}).get("default_price", 0))
+
+
+def get_lowest_price(room_type):
+    """
+    Oda tipine ait en düşük fiyatı döndürür.
+    Fiyat kuralları varsa en düşük rule fiyatı ile varsayılan fiyatı karşılaştırır.
+    """
+    normalized = normalize_room_type(room_type)
+    default_price = get_default_price(normalized)
+
+    min_rule = PriceRule.query.filter(
+        PriceRule.room_type == normalized
+    ).order_by(PriceRule.nightly_price.asc()).first()
+
+    if min_rule:
+        return min(float(min_rule.nightly_price), default_price)
+
+    return default_price
+
+
+def get_nightly_price(room_type, target_date):
+    normalized = normalize_room_type(room_type)
+    price_rule = PriceRule.query.filter(
+        PriceRule.room_type == normalized,
+        PriceRule.start_date <= target_date,
+        PriceRule.end_date >= target_date
+    ).order_by(PriceRule.id.desc()).first()
+
+    if price_rule:
+        return float(price_rule.nightly_price)
+
+    return get_default_price(normalized)
+
+
+def calculate_total_price(room_type, check_in, check_out):
+    total = 0.0
+    current = check_in
+    while current < check_out:
+        total += get_nightly_price(room_type, current)
+        current += timedelta(days=1)
+    return total
+
+
+def load_room_data_from_static():
+    room_data = []
+    base_room_path = os.path.join(app.root_path, "static", "rooms")
+
+    if not os.path.exists(base_room_path):
+        return room_data
+
+    for room_type_code, room_meta in ROOM_DEFINITIONS.items():
+        found_folder = None
+
+        for folder_name in room_meta["folder_names"]:
+            possible_path = os.path.join(base_room_path, folder_name)
+            if os.path.isdir(possible_path):
+                found_folder = folder_name
+                break
+
+        if not found_folder:
+            continue
+
+        room_dir = os.path.join(base_room_path, found_folder)
+        files = sorted(os.listdir(room_dir))
+
+        gallery_images = []
+        main_image_path = None
+
+        for filename in files:
+            lower_name = filename.lower()
+            if not lower_name.endswith((".png", ".jpg", ".jpeg", ".webp")):
+                continue
+
+            file_url = url_for("static", filename=f"rooms/{found_folder}/{filename}")
+
+            if lower_name in ["main.jpg", "main.jpeg", "main.png", "main.webp"]:
+                main_image_path = file_url
+
+            gallery_images.append({
+    	    "title": filename.rsplit(".", 1)[0].replace("_", " ").title(),
+    	    "path": file_url
+	    })
+
+        if not main_image_path and gallery_images:
+            main_image_path = gallery_images[0]["path"]
+
+        if not main_image_path:
+            continue
+
+        room_data.append({
+            "id": room_type_code,
+            "folder_id": found_folder,
+            "name": room_meta["name"],
+            "description": room_meta["description"],
+            "long_description": room_meta["long_description"],
+            "price_per_night": get_lowest_price(room_type_code),
+            "capacity": room_meta["capacity"],
+            "main_image": main_image_path,
+            "gallery_images": gallery_images
+        })
+
+    return room_data
+
+
+def get_gallery_items():
+    gallery_list = []
+    gallery_folder = os.path.join(app.root_path, "static", "gallery")
+
+    if not os.path.exists(gallery_folder):
+        return gallery_list
+
+    for filename in sorted(os.listdir(gallery_folder)):
+        if filename.lower().endswith((".png", ".jpg", ".jpeg", ".webp")):
+            gallery_list.append({
+                "title": filename.replace("_", " ").rsplit(".", 1)[0].title(),
+                "description": "Kaan Motel ve Avşa Adası'ndan kareler",
+                "path": url_for("static", filename=f"gallery/{filename}")
+            })
+
+    return gallery_list
+
+
 def load_yat_kulubu_data():
-    """/static/rooms/yat_kulubu/ klasörünü okuyarak Yat Kulübü verilerini oluşturur."""
-    
-    room_id = 'yat_kulubu'
-    # app nesnesine ve root_path'e erişim sağlanıyor
-    base_room_path = os.path.join(app.root_path, 'static', 'rooms', room_id)
-    
-    if not os.path.isdir(base_room_path):
-        print(f"HATA: Yat Kulübü klasörü bulunamadı: {base_room_path}") # Hata ayıklama için
-        return None 
+    room_id = "yat_kulubu"
+    base_path = os.path.join(app.root_path, "static", "rooms", room_id)
 
-    files = os.listdir(base_room_path)
-    files.sort() 
-    
+    if not os.path.isdir(base_path):
+        return None
+
+    files = sorted(os.listdir(base_path))
     gallery_images = []
     main_image_path = None
-    
+
     for filename in files:
-        # Uzantı kontrolünü daha genel hale getiriyoruz
-        ext = filename.lower().rsplit('.', 1)[-1]
-        if ext in ('png', 'jpg', 'jpeg'):
-            
-            full_file_path = os.path.join(base_room_path, filename)
+        lower_name = filename.lower()
+        if not lower_name.endswith((".png", ".jpg", ".jpeg", ".webp")):
+            continue
 
-            if filename.lower() == 'main.jpg' or filename.lower() == 'main.png':
-                # Ana görseli belirle
-                main_image_path = url_for('static', filename=f'rooms/{room_id}/{filename}')
-            
-            # Galeri görsellerini ekle (main.jpg/png galeride de yer alabilir, bu sorun değil)
-            gallery_images.append({
-                'title': f"Yat Kulübü Görsel {len(gallery_images) + 1}",
-                'path': url_for('static', filename=f'rooms/{room_id}/{filename}')
-            })
+        file_url = url_for("static", filename=f"rooms/{room_id}/{filename}")
 
-    # Eğer ana görsel bulunamazsa (main.jpg yoksa) galerideki ilk görseli ana görsel yapalım
-    if not main_image_path and gallery_images:
-        main_image_path = gallery_images[0]['path']
-        
-    if not main_image_path:
-        print(f"HATA: Yat Kulübü klasöründe okunabilir resim dosyası bulunamadı: {base_room_path}") # Hata ayıklama için
-        return None # Hiç görsel yoksa
+        if lower_name in ["main.jpg", "main.jpeg", "main.png", "main.webp"]:
+            main_image_path = file_url
 
-    # YAT KULÜBÜ SABİT METİNLERİ BURADA TANIMLANIR
-    yat_data = {
-        'title': 'Kaan Motel Yat Kulübü',
-        'description': 'Motelimizin misafirlerine özel olarak sunduğu ayrıcalıklı denizcilik deneyimi.',
-        'long_text': 'Yat Kulübümüz, misafirlerimize sadece konaklama değil, aynı zamanda unutulmaz deniz maceraları sunmak amacıyla kurulmuştur. Tekne turları, dalış aktiviteleri, yelken dersleri ve özel yat kiralama hizmetlerimiz mevcuttur. Denizle iç içe bir tatil arayanlar için idealdir. Güvenli ve deneyimli kaptanlarımız eşliğinde bölgenin en güzel koylarını keşfedin.',
-        'image_path': main_image_path,
-        'gallery_images': gallery_images 
-    }
-    
-    return yat_data
-# Yeni sayfa görüntülenecek
-@app.route('/rezervasyon/yat-kulubu')
-def yat_kulubu_form():
-    # datetime, title değişkenlerini render_template'e geçirmeyi unutmayın
-    return render_template('yacht_club_reservation.html', title="Yat Kulübü Rezervasyon", datetime=datetime)
-
-# Yeni form gönderimini işleyecek
-@app.route('/rezervasyon/yat-kulubu/submit', methods=['POST'])
-def yacht_club_submit():
-    check_in_str = request.form.get('check_in')
-    check_out_str = request.form.get('check_out')
-    guest_name = request.form.get('guest_name')
-    guest_email = request.form.get('guest_email')
-    guest_phone = request.form.get('guest_phone')
-    
-    try:
-        check_in_date = datetime.strptime(check_in_str, '%Y-%m-%d').date()
-        check_out_date = datetime.strptime(check_out_str, '%Y-%m-%d').date()
-    except (ValueError, TypeError):
-        flash('Hata: Tarih formatı geçersiz.', 'danger')
-        return redirect(url_for('yat_kulubu_form'))
-
-    # --- YAT KULÜBÜ KAYIT İŞLEMİ ---
-    try:
-        # room_id=None olacak. Zorunlu alanlar için varsayılan değerler verilmeli (Aşama 1'e göre)
-        new_reservation = Reservation(
-            guest_name=guest_name,
-            guest_email=guest_email,
-            guest_phone=guest_phone,
-            check_in=check_in_date,
-            check_out=check_out_date,
-            adults=0, # Yat Kulübü formunda kişi sayısı almadık, varsayılan 0 veya 1 yapın
-            children=0,
-            room_id=None, # Kesinlikle NULL olmalı
-            total_price=0.0, # Modelden gelen zorunlu alan
-            loyalty_points_awarded=0, # Modelden gelen zorunlu alan
-            status='Yat Kulübü Talebi (Admin Bekliyor)' # Farklı bir başlangıç durumu
-        )
-        
-        db.session.add(new_reservation)
-        db.session.commit()
-
-        flash('Yat Kulübü rezervasyon talebiniz başarıyla alındı. Yönetici onayı bekleniyor.', 'success')
-        return redirect(url_for('yat_kulubu_form')) # Kendi sayfasına geri dön
-
-    except Exception:
-        # Bu hata, modelde eksik bir alan varsa tekrar çıkar (Aşama 1'i atladıysanız)
-        flash('Rezervasyon kaydedilirken veritabanı hatası oluştu. Lütfen site yöneticisiyle iletişime geçin.', 'danger')
-        return redirect(url_for('yat_kulubu_form'))
-
-@app.route('/forgot-username', methods=['GET', 'POST'])
-def forgot_username():
-    return render_template('forgot_username.html')
-
-@app.route('/forgot-password', methods=['GET', 'POST'])
-def forgot_password():
-    # Burada formu gösterebilir veya şifre sıfırlama işlemlerini yapabilirsin
-    return render_template('forgot_password.html')
-
-@app.route('/ada-rehberi')
-def ada_rehberi():
-    
-    # 1. URL'leri içeren listeyi oluştur
-    rehber_listesi = []
-    for yer in ADA_REHBERI_YERI:
-        # Flask'ın url_for fonksiyonu ile görselin statik URL'sini oluştur
-        gorsel_url = url_for('static', filename=yer['gorsel_path']) 
-        
-        # Yeni bir dictionary oluşturup listeye ekle
-        rehber_listesi.append({
-            'id': yer['id'],
-            'ad': yer['ad'],
-            'aciklama': yer['aciklama'],
-            'gorsel_url': gorsel_url # HTML şablonunda kullanılacak URL
+        gallery_images.append({
+            "title": f"Yat Kulübü Görsel {len(gallery_images) + 1}",
+            "path": file_url
         })
-    
-    return render_template(
-        'ada_rehberi.html',
-        title="Avşa Adası Rehberi",
-        nav_links=NAV_LINKS,
-        rehber_listesi=rehber_listesi # Yeni veri listesini şablona gönderiyoruz
-    )
-@app.route('/galeri')
-def galeri():
-    
-    # 🚨 Yeni sistem: Listeyi fonksiyon otomatik oluşturuyor.
-    gallery_items = get_gallery_items() 
-    
-    return render_template(
-        'galeri.html', 
-        gallery_items=gallery_items,
-        current_user=current_user
-    )
-@app.route('/')
-def index():
-    return render_template('index.html', slogan=MOTEL_SLOGAN, nav_links=NAV_LINKS)
 
-# app.py içinde /odalar rotasının üstüne veya uygun bir yere ekleyin
+    if not main_image_path and gallery_images:
+        main_image_path = gallery_images[0]["path"]
 
+    if not main_image_path:
+        return None
 
-@app.route('/odalar')
-def odalar():
-    # Yeni fonksiyonu kullanarak veriyi al
-    oda_listesi = load_room_data_from_static() 
-    return render_template('odalar.html', rooms=oda_listesi)
-
-@app.route('/odalar/<room_id>')
-def oda_detay(room_id):
-    # Yeni fonksiyonu kullanarak veriyi al
-    oda_verileri = load_room_data_from_static()
-    
-    # Oda verilerini bul
-    room = next((r for r in oda_verileri if r['id'] == room_id), None)
-    
-    if room is None:
-        abort(404)
-        
-    return render_template('oda_detay.html', room=room, gallery_items=room['gallery_images'])
-@app.route('/konum-iletisim')
-def konum_iletisim():
-    ILETISIM_BILGILERI = {
-        'adres': 'Deniz Mahallesi, Değirmenardı Mevkii, Zafer Sokak no:6 Avşa',
-        'telefon': '+90 5538898544',
-        'email': 'avsakaanmotel@gmail.com',
-        'ulasim': 'Avşa Adası İskelesine 15 dakikalık yürüyüş mesafesinde.',
-        'harita_iframe': '<iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3032.958911929898!2d27.495157275155798!3d40.520399249324505!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x14b419000f224301%3A0x4e6d88d0246a0cb6!2sKaan%20Motel!5e0!3m2!1str!2str!4v1760429758683!5m2!1str!2str" width="600" height="450" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>'
+    return {
+        "title": "Kaan Motel Yat Kulübü",
+        "description": "Avşa Adası'nda deniz keyfini farklı bir deneyime dönüştüren özel alan.",
+        "long_text": (
+            "Kaan Motel Yat Kulübü, denizle iç içe vakit geçirmek isteyen misafirler için "
+            "özel bir deneyim alanı sunar."
+        ),
+        "image_path": main_image_path,
+        "gallery_images": gallery_images
     }
-    return render_template('konum_iletisim.html', title="Konum ve İletişim", nav_links=NAV_LINKS, bilgiler=ILETISIM_BILGILERI)
 
 
-@app.route('/rezervasyon', methods=['GET'])
-def rezervasyon_formu():
-    oda_listesi = load_room_data_from_static() # Yeni fonksiyon (veya odaların geldiği fonksiyon) çağrılmalı
-    
-    return render_template('rezervasyon_formu.html', 
-                           title="Online Rezervasyon", 
-                           nav_links=NAV_LINKS, 
-                           rooms=oda_listesi, # <-- BURADA rooms olarak gönderilmeli
-                           datetime=datetime)
+def check_availability(room_type_kod, check_in_date_str, check_out_date_str):
+    normalized_room_type = normalize_room_type(room_type_kod)
 
-
-# --- ODA BAZLI TAKVİM API ROTASI (ÇALIŞAN VERSİYON) ---
-@app.route('/api/takvim-doluluk-oda/<int:year>/<int:month>')
-def takvim_doluluk_oda_api(year, month):
-    """
-    Belirtilen yıl ve ay için her bir Room (oda) bazında günlük doluluk takvimini döndürür.
-    """
     try:
-        from datetime import date, timedelta
-        import calendar
-        from sqlalchemy import or_, cast
-        from sqlalchemy.types import Integer
-        
-        start_date = date(year, month, 1)
-    except ValueError:
-        return jsonify({"error": "Geçersiz yıl veya ay."}), 400
+        check_in = datetime.strptime(check_in_date_str, "%Y-%m-%d").date()
+        check_out = datetime.strptime(check_out_date_str, "%Y-%m-%d").date()
+    except (ValueError, TypeError):
+        return False, "Lütfen geçerli giriş ve çıkış tarihleri seçin."
 
-    # Ayın son gününü bulma
-    if month == 12:
-        end_date = date(year + 1, 1, 1) - timedelta(days=1)
-    else:
-        end_date = date(year, month + 1, 1) - timedelta(days=1)
-    
-    num_days = calendar.monthrange(year, month)[1]
+    if check_in >= check_out:
+        return False, "Çıkış tarihi, giriş tarihinden sonra olmalıdır."
 
-    # Tüm odaları doğru şekilde numerik sıralayalım
-    tum_odalar = Room.query.order_by(cast(Room.room_number, Integer)).all()
+    if check_in < date.today():
+        return False, "Geçmiş tarih seçemezsiniz."
 
-    # Çakışan rezervasyonları tek sorguda al
+    candidate_rooms = Room.query.filter_by(room_type=normalized_room_type).all()
+    if not candidate_rooms:
+        return False, "Seçtiğiniz oda tipi şu anda sistemde bulunmuyor."
+
+    full_hotel_block = ManualBlock.query.filter(
+        ManualBlock.is_full_hotel.is_(True),
+        ManualBlock.check_out > check_in,
+        ManualBlock.check_in < check_out
+    ).first()
+
+    if full_hotel_block:
+        return False, "Seçtiğiniz tarihler için tesis genelinde doluluk veya blokaj bulunuyor."
+
+    blocking_statuses = ["Yeni Talep", "Onaylandı", "Telefon Onaylı", "Giriş Yaptı"]
+
     clashing_reservations = Reservation.query.filter(
-        Reservation.room_id.in_([r.id for r in tum_odalar]),
-        Reservation.check_out > start_date,
-        Reservation.check_in <= end_date,
-        or_(
-            Reservation.status == 'Onaylandı',
-            Reservation.status == 'Telefon Onaylı',
-            Reservation.status == 'Giriş Yaptı'
+        Reservation.room_id.in_([room.id for room in candidate_rooms]),
+        and_(
+            Reservation.check_out > check_in,
+            Reservation.check_in < check_out,
+            Reservation.status.in_(blocking_statuses)
         )
     ).all()
 
-    result = []
+    clashing_blocks = ManualBlock.query.filter(
+        ManualBlock.is_full_hotel.is_(False),
+        ManualBlock.room_id.in_([room.id for room in candidate_rooms]),
+        ManualBlock.check_out > check_in,
+        ManualBlock.check_in < check_out
+    ).all()
 
-    for index, oda in enumerate(tum_odalar):
-        # CUSTOM_CALENDAR_NAMES varsa ona göre isim ver, yoksa ROOM_DISPLAY_NAMES
-        if index < len(CUSTOM_CALENDAR_NAMES):
-            gorunur_oda_adi = CUSTOM_CALENDAR_NAMES[index]
-        else:
-            gorunur_oda_adi = ROOM_DISPLAY_NAMES.get(oda.room_number, oda.room_number)
+    reserved_room_ids = {r.room_id for r in clashing_reservations}
+    blocked_room_ids = {b.room_id for b in clashing_blocks}
 
-        gunler = []
-        current_date = start_date
-        for day in range(1, num_days + 1):
-            dolu = False
-            rez_id = None
-            for res in clashing_reservations:
-                if res.room_id == oda.id and res.check_in <= current_date < res.check_out:
-                    dolu = True
-                    rez_id = res.id
-                    break
-            gunler.append({
-                'gun': current_date.day,
-                'durum': 'dolu' if dolu else 'bos',
-                'rez_id': rez_id
+    available_rooms = [
+        room for room in sorted(candidate_rooms, key=room_sort_key)
+        if room.id not in reserved_room_ids and room.id not in blocked_room_ids
+    ]
+
+    if not available_rooms:
+        room_name = ROOM_DEFINITIONS.get(normalized_room_type, {}).get("name", "Seçilen oda")
+        return False, f"Üzgünüz, {room_name} için seçtiğiniz tarihlerde uygun oda görünmüyor."
+
+    return True, available_rooms[0]
+
+
+def build_calendar_matrix(year, month):
+    start_date = date(year, month, 1)
+    num_days = calendar.monthrange(year, month)[1]
+    end_date = date(year, month, num_days)
+
+    rooms = Room.query.order_by(Room.room_number.asc()).all()
+    blocking_statuses = ["Yeni Talep", "Onaylandı", "Telefon Onaylı", "Giriş Yaptı"]
+
+    reservations = Reservation.query.filter(
+        Reservation.check_out > start_date,
+        Reservation.check_in <= end_date,
+        Reservation.status.in_(blocking_statuses)
+    ).all()
+
+    manual_blocks = ManualBlock.query.filter(
+        ManualBlock.check_out > start_date,
+        ManualBlock.check_in <= end_date
+    ).all()
+
+    days = list(range(1, num_days + 1))
+    rows = []
+
+    for room in rooms:
+        row = {
+            "room_id": room.id,
+            "room_number": room.room_number,
+            "room_name": get_room_display_name(room),
+            "days": []
+        }
+
+        for day in days:
+            current_day = date(year, month, day)
+            status = "bos"
+            label = ""
+
+            full_hotel_block = next(
+                (b for b in manual_blocks if b.is_full_hotel and b.check_in <= current_day < b.check_out),
+                None
+            )
+
+            room_block = next(
+                (b for b in manual_blocks if not b.is_full_hotel and b.room_id == room.id and b.check_in <= current_day < b.check_out),
+                None
+            )
+
+            room_reservation = next(
+                (r for r in reservations if r.room_id == room.id and r.check_in <= current_day < r.check_out),
+                None
+            )
+
+            if full_hotel_block:
+                status = "blokaj"
+                label = f"Tüm otel - {full_hotel_block.source}"
+            elif room_block:
+                status = "blokaj"
+                label = room_block.source
+            elif room_reservation:
+                status = "rezervasyon"
+                label = room_reservation.source
+
+            row["days"].append({
+                "day": day,
+                "status": status,
+                "label": label
             })
-            current_date += timedelta(days=1)
 
-        result.append({
-            'oda_id': oda.id,
-            'oda': gorunur_oda_adi,
-            'gunler': gunler
+        rows.append(row)
+
+    return {
+        "year": year,
+        "month": month,
+        "month_name": MONTH_NAMES_TR.get(month, str(month)),
+        "days": days,
+        "rows": rows
+    }
+
+
+@app.context_processor
+def inject_globals():
+    return {
+        "contact_info": CONTACT_INFO,
+        "current_year": datetime.now().year,
+        "manager_logged_in": session.get("manager_logged_in", False)
+    }
+
+
+@app.route("/")
+def index():
+    seo = build_seo(
+        "Kaan Motel | Avşa Otelleri Arasında Huzurlu ve Samimi Konaklama",
+        "Avşa otelleri, Avşa otel fiyatları ve Avşa'da nerede kalınır soruları için sade, temiz ve konforlu bir seçenek: Kaan Motel."
+    )
+
+    featured_gallery = get_gallery_items()[:3]
+    preview_prices = {
+        room_type: get_lowest_price(room_type)
+        for room_type in ROOM_DEFINITIONS.keys()
+    }
+
+    return render_template(
+        "index.html",
+        title=seo["title"],
+        description=seo["description"],
+        slogan="Avşa Adası'nda huzurlu, samimi ve konforlu konaklama",
+        reviews=REVIEWS,
+        featured_gallery=featured_gallery,
+        today=date.today().isoformat(),
+        preview_prices=preview_prices
+    )
+
+
+@app.route("/api/calculate-price", methods=["GET"])
+def api_calculate_price():
+    room_type = request.args.get("room_type")
+    check_in_str = request.args.get("check_in")
+    check_out_str = request.args.get("check_out")
+
+    if not room_type:
+        return jsonify({"ok": False, "message": "Oda tipi eksik."}), 400
+
+    normalized_room_type = normalize_room_type(room_type)
+
+    if not check_in_str or not check_out_str:
+        nightly_price = get_lowest_price(normalized_room_type)
+        return jsonify({
+            "ok": True,
+            "nightly_price": nightly_price,
+            "total_price": None,
+            "nights": 0
         })
 
-    return jsonify(result)
+    try:
+        check_in = datetime.strptime(check_in_str, "%Y-%m-%d").date()
+        check_out = datetime.strptime(check_out_str, "%Y-%m-%d").date()
+    except ValueError:
+        return jsonify({"ok": False, "message": "Geçersiz tarih formatı."}), 400
+
+    if check_in >= check_out:
+        return jsonify({"ok": False, "message": "Çıkış tarihi girişten sonra olmalı."}), 400
+
+    nightly_price = get_nightly_price(normalized_room_type, check_in)
+    total_price = calculate_total_price(normalized_room_type, check_in, check_out)
+    nights = (check_out - check_in).days
+
+    return jsonify({
+        "ok": True,
+        "nightly_price": nightly_price,
+        "total_price": total_price,
+        "nights": nights
+    })
 
 
+@app.route("/galeri")
+def galeri():
+    seo = build_seo(
+        "Kaan Motel Galeri | Avşa Adası Oda ve Tesis Görselleri",
+        "Avşa'da nerede kalınır diye araştırıyorsanız Kaan Motel galerisini inceleyin. Odalarımızı, bahçemizi ve tesisimizi fotoğraflarla görün."
+    )
 
-@app.route('/rezervasyon/yap', methods=['POST'])
+    return render_template(
+        "galeri.html",
+        title=seo["title"],
+        description=seo["description"],
+        gallery_items=get_gallery_items()
+    )
+
+
+@app.route("/odalar")
+def odalar():
+    seo = build_seo(
+        "Kaan Motel Odalar | Avşa Otel Fiyatları ve Oda Seçenekleri",
+        "Avşa otel fiyatları ve oda seçenekleri için Kaan Motel odalarını inceleyin. Standart, suit ve petsuit konaklama alternatifleri burada."
+    )
+
+    return render_template(
+        "odalar.html",
+        title=seo["title"],
+        description=seo["description"],
+        rooms=load_room_data_from_static()
+    )
+
+
+@app.route("/odalar/<room_id>")
+def oda_detay(room_id):
+    oda_verileri = load_room_data_from_static()
+    room = next((r for r in oda_verileri if r["id"] == room_id), None)
+
+    if room is None:
+        abort(404)
+
+    seo = build_seo(
+        f"{room['name']} | Kaan Motel Avşa Adası",
+        f"{room['name']} detaylarını inceleyin. {room['description']} Avşa'da konforlu konaklama için Kaan Motel oda seçeneklerini keşfedin."
+    )
+
+    return render_template(
+        "oda_detay.html",
+        title=seo["title"],
+        description=seo["description"],
+        room=room,
+        gallery_items=room["gallery_images"]
+    )
+
+
+@app.route("/konum-iletisim")
+def konum_iletisim():
+    seo = build_seo(
+        "Kaan Motel Konum ve İletişim | Avşa Adası",
+        "Kaan Motel telefon, WhatsApp, e-posta ve konum bilgilerine ulaşın. Avşa Adası rezervasyon ve bilgi talepleriniz için bize kolayca ulaşabilirsiniz."
+    )
+
+    bilgiler = {
+        "adres": CONTACT_INFO["address"],
+        "telefon": CONTACT_INFO["phone"],
+        "email": CONTACT_INFO["email"],
+        "ulasim": "Avşa Adası iskelesine yaklaşık 15 dakikalık yürüyüş mesafesindedir.",
+        "harita_iframe": (
+            f'<iframe src="{CONTACT_INFO["maps_embed"]}" width="100%" height="420" '
+            'style="border:0;" allowfullscreen="" loading="lazy" '
+            'referrerpolicy="no-referrer-when-downgrade"></iframe>'
+        ),
+    }
+
+    return render_template(
+        "konum_iletisim.html",
+        title=seo["title"],
+        description=seo["description"],
+        bilgiler=bilgiler
+    )
+
+
+@app.route("/rezervasyon", methods=["GET"])
+def rezervasyon_formu():
+    seo = build_seo(
+        "Rezervasyon | Kaan Motel Avşa Adası",
+        "Kaan Motel Avşa Adası rezervasyon formu ile hızlıca talep oluşturun. Avşa otelleri arasında konforlu bir konaklama için bize ulaşın."
+    )
+
+    return render_template(
+        "rezervasyon_formu.html",
+        title=seo["title"],
+        description=seo["description"],
+        rooms=load_room_data_from_static(),
+        datetime=datetime,
+        today=date.today().isoformat(),
+    )
+
+
+@app.route("/rezervasyon/yap", methods=["POST"])
 def rezervasyon_yap():
-    # ... (Rezervasyon yapma mantığı) ...
-    check_in_str = request.form.get('check_in')
-    check_out_str = request.form.get('check_out')
-    room_type_kod = request.form.get('room_type')
-    guest_name = request.form.get('guest_name')
-    guest_email = request.form.get('guest_email')
-    guest_phone = request.form.get('guest_phone')
-    adults = int(request.form.get('adults'))
-    children = int(request.form.get('children'))
+    check_in_str = request.form.get("check_in")
+    check_out_str = request.form.get("check_out")
+    room_type_kod = request.form.get("room_type")
+    guest_name = (request.form.get("guest_name") or "").strip()
+    guest_email = (request.form.get("guest_email") or "").strip()
+    guest_phone = (request.form.get("guest_phone") or "").strip()
+
+    try:
+        adults = int(request.form.get("adults", 1))
+        children = int(request.form.get("children", 0))
+    except ValueError:
+        flash("Kişi sayısı geçersiz.", "danger")
+        return redirect(url_for("index") + "#rezervasyon")
+
+    if not all([check_in_str, check_out_str, room_type_kod, guest_name, guest_email]):
+        flash("Lütfen zorunlu alanları eksiksiz doldurun.", "danger")
+        return redirect(url_for("index") + "#rezervasyon")
+
+    try:
+        check_in_date = datetime.strptime(check_in_str, "%Y-%m-%d").date()
+        check_out_date = datetime.strptime(check_out_str, "%Y-%m-%d").date()
+    except ValueError:
+        flash("Tarih formatı geçersiz.", "danger")
+        return redirect(url_for("index") + "#rezervasyon")
 
     is_available, result = check_availability(room_type_kod, check_in_str, check_out_str)
 
-    if is_available:
-        available_room = result
-        
-        check_in_date = datetime.strptime(check_in_str, '%Y-%m-%d').date()
-        check_out_date = datetime.strptime(check_out_str, '%Y-%m-%d').date()
+    if not is_available:
+        flash(result, "danger")
+        return redirect(url_for("index") + "#rezervasyon")
 
-        new_reservation = Reservation(
-            guest_name=guest_name,
-            guest_email=guest_email,
-            guest_phone=guest_phone,
-            check_in=check_in_date,
-            check_out=check_out_date,
-            adults=adults,
-            children=children,
-            room_id=available_room.id,
-            status='Online Onay Bekliyor'
-        )
+    available_room = result
 
-        db.session.add(new_reservation)
-        db.session.commit()
+    final_reservation_conflict = Reservation.query.filter(
+        Reservation.room_id == available_room.id,
+        Reservation.check_out > check_in_date,
+        Reservation.check_in < check_out_date,
+        Reservation.status.in_(["Yeni Talep", "Onaylandı", "Telefon Onaylı", "Giriş Yaptı"])
+    ).first()
 
-        flash(f'Rezervasyon talebiniz alınmıştır. Onay için ödeme bekleniyor.', 'success')
-        
-        return redirect(url_for('rezervasyon_formu'))
-    else:
-        flash(result, 'danger')
-        return redirect(url_for('rezervasyon_formu'))
+    if final_reservation_conflict:
+        flash("Bu tarihlerde oda müsait değil.", "danger")
+        return redirect(url_for("index") + "#rezervasyon")
 
-# --- MÜŞTERİ HESAP YÖNETİM ROTALARI ---
+    final_block_conflict = ManualBlock.query.filter(
+        ManualBlock.room_id == available_room.id,
+        ManualBlock.check_out > check_in_date,
+        ManualBlock.check_in < check_out_date
+    ).first()
 
-@app.route('/register', methods=['GET', 'POST'])
-def register():
-    if current_user.is_authenticated:
-        if current_user.is_admin:
-            return redirect(url_for('admin_dashboard'))
-        else:
-            return redirect(url_for('profil'))
+    if final_block_conflict:
+        flash("Bu tarihlerde oda müsait değil.", "danger")
+        return redirect(url_for("index") + "#rezervasyon")
 
-    if request.method == 'POST':
-        # --- HATA ÇÖZÜMÜ: 'form' yerine 'request.form' kullanıldı ---
-        username = request.form.get('username')
-        email = request.form.get('email')
-        password = request.form.get('password')
-        password_confirm = request.form.get('password_confirm')
-        kvkk_consent_value = request.form.get('kvkk_consent')  
-        # --- Yeni Alanlar Eklendi ---
-        first_name_form = request.form.get('first_name')
-        last_name_form = request.form.get('last_name')
-        # -----------------------------
+    total_price = calculate_total_price(room_type_kod, check_in_date, check_out_date)
 
-        if not (username and email and password and password_confirm):
-            flash("Lütfen tüm alanları doldurun.", 'danger')
-            return render_template('register.html', title="Kayıt Ol", nav_links=NAV_LINKS)
+    new_reservation = Reservation(
+        guest_name=guest_name,
+        guest_email=guest_email,
+        guest_phone=guest_phone,
+        check_in=check_in_date,
+        check_out=check_out_date,
+        adults=adults,
+        children=children,
+        room_id=available_room.id,
+        status="Yeni Talep",
+        source="Website",
+        total_price=total_price
+    )
 
-        if password != password_confirm:
-            flash("Şifreler eşleşmiyor.", 'danger')
-            return render_template('register.html', title="Kayıt Ol", nav_links=NAV_LINKS)
-
-        if User.query.filter_by(username=username).first():
-            flash("Bu kullanıcı adı zaten kullanılıyor.", 'danger')
-            return render_template('register.html', title="Kayıt Ol", nav_links=NAV_LINKS)
-        if User.query.filter_by(email=email).first():
-            flash("Bu e-posta adresi zaten kayıtlı.", 'danger')
-            return render_template('register.html', title="Kayıt Ol", nav_links=NAV_LINKS)
-
-        if kvkk_consent_value != 'on':
-             flash("Kayıt olabilmek için KVKK metnini onaylamanız gerekmektedir.", 'danger')
-             return render_template('register.html', title="Kayıt Ol", nav_links=NAV_LINKS)
-            
-        new_user = User(
-            username=username,
-            email=email,
-            password_hash=generate_password_hash(password, method='pbkdf2:sha256'),
-            total_points=0,
-            is_admin=False,
-            kvkk_consent=True,
-            # Yeni alanları atama
-            first_name=first_name_form, 
-            last_name=last_name_form
-        )
-
-        db.session.add(new_user)
-        db.session.commit()
-
-        flash("Kayıt başarılı! Lütfen giriş yapınız.", 'success')
-        return redirect(url_for('login'))
-
-    # GET İsteği için
-    return render_template('register.html', title="Kayıt Ol", nav_links=NAV_LINKS)
-
-# --- 4. YENİ ROTA: Ödül Talebini Onayla ---
-@app.route('/admin/approve_redemption/<int:redemption_id>', methods=['GET'])
-@login_required
-def approve_redemption(redemption_id):
-    if not current_user.is_admin:
-        flash("Yetkisiz erişim.", "danger")
-        return redirect(url_for('admin_dashboard'))
-        
-    redemption = Redemption.query.get_or_404(redemption_id)
-    
-    if redemption.status != 'Beklemede':
-        flash("Bu talep zaten işlenmiş.", "warning")
-        return redirect(url_for('admin_dashboard') + '#redemptions-approval')
-
-    redemption.status = 'Onaylandı'
+    db.session.add(new_reservation)
     db.session.commit()
-    
-    # NOT: Puan Düşme İşlemi Redundant Olmalı. 
-    # Profilde puan zaten düşüldüğü için burada puan EKLEME/DÜŞME yapmıyoruz. 
-    # Sadece statüyü güncelliyoruz.
-    
-    flash(f"Ödül Talebi #{redemption.id} ({redemption.reward.title}) onaylandı.", "success")
-    return redirect(url_for('admin_dashboard') + '#redemptions-approval')
+
+    flash(f"Rezervasyon talebiniz başarıyla alındı. Toplam fiyat: {total_price:,.0f} ₺", "success")
+    return redirect(url_for("index") + "#rezervasyon")
 
 
-# --- 5. YENİ ROTA: Ödül Talebini Reddet ---
-@app.route('/admin/reject_redemption/<int:redemption_id>', methods=['GET'])
-@login_required
-def reject_redemption(redemption_id):
-    if not current_user.is_admin:
-        flash("Yetkisiz erişim.", "danger")
-        return redirect(url_for('admin_dashboard'))
-        
-    redemption = Redemption.query.get_or_404(redemption_id)
-    
-    if redemption.status != 'Beklemede':
-        flash("Bu talep zaten işlenmiş.", "warning")
-        return redirect(url_for('admin_dashboard') + '#redemptions-approval')
+@app.route("/yat-klubu")
+def yat_klubu():
+    seo = build_seo(
+        "Kaan Motel Yat Kulübü | Avşa Adası",
+        "Kaan Motel Yat Kulübü ile Avşa Adası'nda deniz keyfini farklı bir deneyime dönüştürün."
+    )
 
-    # Talep reddedildiğinde puanı KULLANICININ HESABINA GERİ İADE EDİN
-    redemption.status = 'Reddedildi'
-    redemption.user.total_points += redemption.points_used 
-    db.session.commit()
-    
-    flash(f"Ödül Talebi #{redemption.id} reddedildi ve {redemption.points_used} puan iade edildi.", "warning")
-    return redirect(url_for('admin_dashboard') + '#redemptions-approval')
-@app.route('/admin/add-mission', methods=['GET', 'POST'])
-@login_required
-def add_mission():
-    if not current_user.is_admin:
-        flash("Bu sayfaya erişim yetkiniz yok.", "danger")
-        return redirect(url_for('profil'))
-
-    if request.method == 'POST':
-        title = request.form.get('title')
-        description = request.form.get('description')
-        points_reward = int(request.form.get('points_reward'))
-        # Formdan gelen veriyi alırken 'mission_type' kullanmak sorun değil
-        mission_type = request.form.get('mission_type')
-        is_repeatable = request.form.get('is_repeatable') == 'on'
-        is_active = request.form.get('is_active') == 'on'
-
-        new_mission = Mission(
-            title=title,
-            description=description,
-            points_reward=points_reward,
-            # 🚨 KRİTİK DÜZELTME BURADA!
-            # Modeldeki sütun adı 'type' olduğu için burayı 'type' olarak değiştirdik.
-            type=mission_type, 
-            # Hatalı olan: mission_type=mission_type,
-            
-            is_repeatable=is_repeatable,
-            is_active=is_active
-        )
-        db.session.add(new_mission)
-        db.session.commit()
-        flash(f'Yeni görev "{title}" başarıyla eklendi.', 'success')
-        return redirect(url_for('admin_dashboard'))
-
-    return render_template('add_mission.html', nav_links=NAV_LINKS, title="Yeni Görev Ekle")
-@app.route('/profil/complete_mission/<int:mission_id>', methods=['GET'])
-@login_required
-def complete_mission(mission_id):
-    mission = Mission.query.get_or_404(mission_id)
-    
-    if not mission.is_active:
-        flash("Bu görev şu anda aktif değil.", "danger")
-        return redirect(url_for('profil'))
-
-    # Kullanıcının bu görevi zaten tamamlayıp tamamlamadığını kontrol et
-    # UserMission modelini kullanıyoruz.
-    existing_task = UserMission.query.filter_by(user_id=current_user.id, mission_id=mission_id).first()
-    
-    if existing_task and not mission.is_repeatable:
-        flash("Bu görevi daha önce tamamladınız.", "warning")
-        return redirect(url_for('profil'))
-        
-    # --- KRİTİK DÜZELTME BAŞLANGIÇ ---
-    
-    # HATA 2 DÜZELTİLDİ: total_points kullanıldı.
-    current_user.total_points += mission.points_reward 
-    
-    if not existing_task:
-        # UserMission modelini kullanıyoruz.
-        new_task_record = UserMission(
-            user_id=current_user.id,
-            mission_id=mission_id,
-            # HATA 3 DÜZELTİLDİ: is_validated=True kullanıldı.
-            is_validated=True 
-            # NOT: is_validated alanını kullanarak görevin tamamlandığını işaretliyoruz.
-        )
-        db.session.add(new_task_record)
-    
-    # Eğer görev tekrar edilebilir ise, her seferinde yeni kayıt oluşturulabilir, 
-    # ancak sizin modelinizde UniqueConstraint olduğu için (eğer tekrar edilebilir ise)
-    # buradaki mantığı basitleştirip sadece puan eklemeyi ve mevcut değilse kayıt 
-    # oluşturmayı tercih ettik.
-    
-    # --- KRİTİK DÜZELTME BİTİŞİ ---
-
-    db.session.commit()
-    
-    flash(f"Tebrikler! '{mission.title}' görevini tamamladınız ve +{mission.points_reward} puan kazandınız.", "success")
-    return redirect(url_for('profil'))
-
-@app.route('/profil')
-@login_required
-def profil():
-    
-    user_tasks_data = []
-    
-    # Model adı artık UserMission (Sizin modelinizin adı)
-    active_missions = Mission.query.filter_by(is_active=True).all()
-    
-    for mission in active_missions:
-        # UserMission modelini kullanıyoruz
-        # Bu görev, bu kullanıcı tarafından herhangi bir kayıtla tamamlanmış mı?
-        is_completed = UserMission.query.filter_by(
-            user_id=current_user.id, 
-            mission_id=mission.id
-            # NOT: Bu modelde sadece kayıt olması tamamlandığı anlamına gelir. 
-            # completed=True filtresini çıkardık.
-        ).first()
-        
-        user_tasks_data.append({
-            'name': mission.title,
-            'description': mission.description,
-            # is_completed kayıt varsa True döner.
-            'completed': bool(is_completed), 
-            'mission_id': mission.id,              
-            'points_reward': mission.points_reward   
-        })
-    
-    rewards = Reward.query.all()  
+    data = load_yat_kulubu_data()
+    if data is None:
+        flash("Yat Kulübü alanı şu anda hazır değil.", "warning")
+        return redirect(url_for("index"))
 
     return render_template(
-        'profil.html', 
-        current_user=current_user, 
-        tasks=user_tasks_data,  
-        rewards=rewards
+        "yat_kulubu_detay.html",
+        title=seo["title"],
+        description=seo["description"],
+        data=data
     )
-                           
-                        
-                          
-                           
-                         
-
-                            
-
-@app.route('/admin/add-campaign', methods=['GET', 'POST'])
-@login_required
-def add_campaign():
-    if not current_user.is_admin:
-        flash("Bu sayfaya erişim yetkiniz yok.", "danger")
-        return redirect(url_for('profil'))
-
-    if request.method == 'POST':
-        title = request.form.get('title')
-        description = request.form.get('description')
-        start_date = datetime.strptime(request.form.get('start_date'), '%Y-%m-%d').date()
-        end_date = datetime.strptime(request.form.get('end_date'), '%Y-%m-%d').date()
-        is_active = request.form.get('is_active') == 'on'
-
-        new_campaign = Campaign(
-            title=title,
-            description=description,
-            start_date=start_date,
-            end_date=end_date,
-            is_active=is_active
-        )
-        db.session.add(new_campaign)
-        db.session.commit()
-        flash(f'Yeni kampanya "{title}" başarıyla eklendi.', 'success')
-        return redirect(url_for('admin_dashboard'))
-
-    return render_template('add_campaign.html', nav_links=NAV_LINKS, title="Yeni Kampanya Ekle")
 
 
-
-@app.route('/reward/redeem/<int:reward_id>', methods=['POST'])
-@login_required
-def redeem_reward(reward_id):
-    reward = Reward.query.get_or_404(reward_id)
-    
-    if current_user.total_points < reward.points_cost:
-        flash("Yeterli puanınız yok. Biraz daha görev tamamlamalısınız!", 'danger')
-        return redirect(url_for('profil'))
-        
-    current_user.total_points -= reward.points_cost
-    
-    new_redemption = Redemption(
-        user_id=current_user.id,
-        reward_id=reward_id,
-        status='REQUESTED'
+@app.route("/yonetim-giris", methods=["GET", "POST"])
+def yonetim_login():
+    seo = build_seo(
+        "Yönetim Girişi | Kaan Motel",
+        "Kaan Motel rezervasyon, blokaj ve fiyat yönetimi giriş ekranı."
     )
-    
-    db.session.add(new_redemption)
-    db.session.commit()
-    
-    flash(f'Tebrikler! "{reward.title}" ödülünü başarıyla talep ettiniz. Kalan Puanınız: {current_user.total_points}', 'success')
-    return redirect(url_for('profil'))
-# --- SADAKAT ROTALARI SONU ---
 
-# --- YÖNETİCİ GİRİŞ VE PANEL ROTALARI ---
+    if request.method == "POST":
+        password = request.form.get("password", "")
+        if password == app.config["MANAGER_PASSWORD"]:
+            session["manager_logged_in"] = True
+            flash("Yönetim paneline giriş yapıldı.", "success")
+            return redirect(url_for("yonetim"))
+        flash("Şifre hatalı.", "danger")
 
-@app.route('/login', methods=['GET', 'POST'])
-def login():
-    if current_user.is_authenticated:
-        if current_user.is_admin:
-            return redirect(url_for('admin_dashboard'))
-        else:
-            return redirect(url_for('profil'))
-
-    if request.method == 'POST':
-        username = request.form.get('username')
-        password = request.form.get('password')
-        
-        user = User.query.filter_by(username=username).first()
-        
-        if user and check_password_hash(user.password_hash, password):
-            login_user(user)
-            flash(f'Hoş geldiniz, {user.username}!', 'success')
-            
-            if user.is_admin:
-                return redirect(url_for('admin_dashboard'))
-            else:
-                return redirect(url_for('profil'))
-
-        else:
-            flash('Kullanıcı adı veya şifre hatalı.', 'danger')
-
-    return render_template('login.html', title="Yönetici Girişi", nav_links=NAV_LINKS)
-
-@app.route('/logout')
-@login_required 
-def logout():
-    logout_user()
-    flash("Başarıyla çıkış yaptınız.", 'success') 
-    return redirect(url_for('index'))
-
-
-# app.py dosyasında, mevcut admin_dashboard fonksiyonunuzu bununla değiştirin
-from flask import render_template, redirect, url_for, flash, request
-from flask_login import login_required, current_user
-from sqlalchemy import or_ # Eğer bu import yoksa ekleyin
-
-@app.route('/admin-dashboard')  # TİRE'LI TANIM
-@login_required
-def admin_dashboard():
-    if not current_user.is_admin:
-        flash("Bu işlem için yetkiniz yok.", "danger")
-        return redirect(url_for('index'))
-
-    # Rezervasyonları çek
-    reservations = Reservation.query.filter(
-        or_(
-            Reservation.status == 'Online Onay Bekliyor',
-            Reservation.status == 'Telefon Onaylı',
-            Reservation.status == 'Onaylandı',
-            Reservation.status == 'Giriş Yaptı',
-            Reservation.status == 'Yat Kulübü Talebi (Admin Bekliyor)',
-        )
-    ).order_by(Reservation.check_in.asc()).all()
-    
-    # Odaları room_number'a göre sıralıyoruz
-    rooms = Room.query.order_by(cast(Room.room_number, Integer)).all()
-    
-    users_list = User.query.filter(User.is_admin == False).all()
-    all_missions = Mission.query.order_by(Mission.is_active.desc(), Mission.id.asc()).all()
-    
-    # Ödül Taleplerini Çek
-    pending_redemptions = Redemption.query.filter_by(status='Beklemede').order_by(Redemption.redemption_date.asc()).all()
-
-    # Şablona gönderim
     return render_template(
-        'admin_dashboard.html', 
-        current_user=current_user,
+        "yonetim_login.html",
+        title=seo["title"],
+        description=seo["description"]
+    )
+
+
+@app.route("/yonetim-cikis")
+def yonetim_logout():
+    session.pop("manager_logged_in", None)
+    flash("Yönetim oturumu kapatıldı.", "info")
+    return redirect(url_for("index"))
+
+
+@app.route("/yonetim")
+@manager_required
+def yonetim():
+    seo = build_seo(
+        "Kaan Motel Yönetim Paneli",
+        "Rezervasyon, blokaj ve fiyat yönetimi ekranı."
+    )
+
+    today_obj = date.today()
+    try:
+        selected_year = int(request.args.get("year", today_obj.year))
+        selected_month = int(request.args.get("month", today_obj.month))
+    except ValueError:
+        selected_year = today_obj.year
+        selected_month = today_obj.month
+
+    if selected_month < 1 or selected_month > 12:
+        selected_month = today_obj.month
+
+    reservations = Reservation.query.order_by(Reservation.check_in.asc()).all()
+    manual_blocks = ManualBlock.query.order_by(ManualBlock.check_in.asc()).all()
+    price_rules = PriceRule.query.order_by(PriceRule.start_date.asc(), PriceRule.room_type.asc()).all()
+    rooms = Room.query.order_by(Room.room_number.asc()).all()
+    calendar_data = build_calendar_matrix(selected_year, selected_month)
+
+    return render_template(
+        "yonetim.html",
+        title=seo["title"],
+        description=seo["description"],
         reservations=reservations,
-        rooms=rooms,  # sorted_rooms yerine rooms olarak gönderdik
-        users_list=users_list,
-        missions=all_missions,
-        pending_redemptions=pending_redemptions
+        manual_blocks=manual_blocks,
+        price_rules=price_rules,
+        rooms=rooms,
+        source_options=SOURCE_OPTIONS,
+        calendar_data=calendar_data,
+        selected_year=selected_year,
+        selected_month=selected_month,
+        get_room_display_name=get_room_display_name,
+        room_definitions=ROOM_DEFINITIONS
     )
 
-    
-    
-# --- 2. YENİ ROTA: Görev Aktivasyon/Deaktivasyon ---
-@app.route('/admin/toggle_mission/<int:mission_id>', methods=['GET'])
-@login_required
-def toggle_mission(mission_id):
-    if not current_user.is_admin:
-        flash("Bu işlem için yetkiniz yok.", "danger")
-        return redirect(url_for('admin_dashboard'))
-        
-    mission = Mission.query.get_or_404(mission_id)
-    mission.is_active = not mission.is_active
-    
-    status_msg = "yayında" if mission.is_active else "yayından kaldırıldı"
+
+@app.route("/yonetim/fiyat-ekle", methods=["POST"])
+@manager_required
+def yonetim_fiyat_ekle():
+    room_type = normalize_room_type(request.form.get("room_type"))
+    start_date_str = request.form.get("start_date")
+    end_date_str = request.form.get("end_date")
+    nightly_price_str = request.form.get("nightly_price")
+    note = (request.form.get("note") or "").strip()
+
+    if not room_type or not start_date_str or not end_date_str or not nightly_price_str:
+        flash("Lütfen fiyat tanımı için tüm zorunlu alanları doldurun.", "danger")
+        return redirect(url_for("yonetim"))
+
+    try:
+        start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date()
+        end_date = datetime.strptime(end_date_str, "%Y-%m-%d").date()
+        nightly_price = float(nightly_price_str)
+    except ValueError:
+        flash("Fiyat veya tarih formatı geçersiz.", "danger")
+        return redirect(url_for("yonetim"))
+
+    if end_date < start_date:
+        flash("Bitiş tarihi başlangıç tarihinden önce olamaz.", "danger")
+        return redirect(url_for("yonetim"))
+
+    new_rule = PriceRule(
+        room_type=room_type,
+        start_date=start_date,
+        end_date=end_date,
+        nightly_price=nightly_price,
+        note=note or None
+    )
+    db.session.add(new_rule)
     db.session.commit()
-    
-    flash(f"'{mission.title}' görevi artık {status_msg}.", "info")
-    return redirect(url_for('admin_dashboard') + '#missions-management')
+
+    flash("Fiyat kuralı başarıyla eklendi.", "success")
+    return redirect(url_for("yonetim"))
 
 
-# --- 3. YENİ ROTA: Görev Tamamlama Onayı (Manual Onay Gerektiren Görevler İçin) ---
-@app.route('/admin/approve_mission/<int:user_id>/<int:mission_id>', methods=['GET'])
-@login_required
-def approve_mission_manual(user_id, mission_id):
-    if not current_user.is_admin:
-        flash("Bu işlem için yetkiniz yok.", "danger")
-        return redirect(url_for('admin_dashboard'))
-        
-    user = User.query.get_or_404(user_id)
-    mission = Mission.query.get_or_404(mission_id)
-    
-    # Kontrol: Görev zaten tamamlanmış mı? (Repeatable olmayan görevler için)
-    already_completed = UserMission.query.filter_by(user_id=user_id, mission_id=mission_id).first()
-    
-    if already_completed and not mission.is_repeatable:
-        flash(f"{user.username} kullanıcısı bu görevi zaten tamamlamış.", "warning")
-        return redirect(url_for('admin_dashboard') + '#missions-management')
-        
-    # Puanı ekle ve kaydı oluştur
-    user.total_points += mission.points_reward
-    user_mission = UserMission(user_id=user_id, mission_id=mission_id)
-    db.session.add(user_mission)
+@app.route("/yonetim/fiyat-sil/<int:rule_id>")
+@manager_required
+def yonetim_fiyat_sil(rule_id):
+    rule = PriceRule.query.get_or_404(rule_id)
+    db.session.delete(rule)
     db.session.commit()
-    
-    flash(f"✅ {user.username} kullanıcısının '{mission.title}' görevi onaylandı ve {mission.points_reward} puan eklendi.", "success")
-    return redirect(url_for('admin_dashboard') + '#missions-management')
-    
-                           
-
-    # Oda seçim listesini özel isimlerle hazırlama
-    formatted_rooms = []
-    sorted_rooms = Room.query.order_by(Room.room_number).all()
-    for index, room in enumerate(sorted_rooms):
-        room_name = room.room_number 
-        if index < len(CUSTOM_CALENDAR_NAMES):
-            room_name = CUSTOM_CALENDAR_NAMES[index]
-        room.display_name = room_name 
-        formatted_rooms.append(room)
-
-    return render_template('admin_dashboard.html', 
-                           title="Yönetici Paneli", 
-                           nav_links=NAV_LINKS, 
-                           reservations=reservations_list, 
-                           oda_tipleri=ODA_TIPLERI_DICT,
-                           rooms=formatted_rooms,
-                           users_list=users_list,
-                           campaigns=campaigns)
+    flash("Fiyat kuralı silindi.", "warning")
+    return redirect(url_for("yonetim"))
 
 
-@app.route('/admin/add-reservation', methods=['GET', 'POST'])
-@login_required
-def add_reservation():
-    # YÖNETİCİ KONTROLÜ
-    if not current_user.is_admin:
-        flash("Bu sayfaya erişim yetkiniz bulunmamaktadır.", 'danger')
-        return redirect(url_for('profil')) 
-    
-    if request.method == 'POST':
-        room_id = int(request.form.get('room_id'))
-        check_in_str = request.form.get('check_in')
-        check_out_str = request.form.get('check_out')
-        guest_name = request.form.get('guest_name')
-        guest_email = request.form.get('guest_email')
-        guest_phone = request.form.get('guest_phone')
-        adults = int(request.form.get('adults'))
-        children = int(request.form.get('children'))
+@app.route("/yonetim/blok-ekle", methods=["POST"])
+@manager_required
+def yonetim_blok_ekle():
+    guest_name = (request.form.get("guest_name") or "").strip()
+    source = request.form.get("source") or "Diğer"
+    check_in_str = request.form.get("check_in")
+    check_out_str = request.form.get("check_out")
+    room_id_raw = request.form.get("room_id")
+    note = (request.form.get("note") or "").strip()
+    is_full_hotel = request.form.get("is_full_hotel") == "on"
 
-        check_in_date = datetime.strptime(check_in_str, '%Y-%m-%d').date()
-        check_out_date = datetime.strptime(check_out_str, '%Y-%m-%d').date()
-        
-        # Çakışma kontrolü
-        clashing_reservations = Reservation.query.filter(
-            Reservation.room_id == room_id,
-            and_(
-                Reservation.check_out > check_in_date,
-                Reservation.check_in < check_out_date,
-                or_(
-                    Reservation.status == 'Onaylandı',
-                    Reservation.status == 'Telefon Onaylı',
-                    Reservation.status == 'Giriş Yaptı'
-                )
-            )
-        ).all()
-        
-        if clashing_reservations:
-            room = Room.query.get(room_id)
-            flash(f"Hata: {room.room_number} numaralı oda bu tarihlerde zaten dolu!", 'danger')
-            return redirect(url_for('add_reservation'))
+    if not check_in_str or not check_out_str:
+        flash("Lütfen giriş ve çıkış tarihlerini girin.", "danger")
+        return redirect(url_for("yonetim"))
 
-        new_reservation = Reservation(
-            guest_name=guest_name,
-            guest_email=guest_email,
-            guest_phone=guest_phone,
-            check_in=check_in_date,
-            check_out=check_out_date,
-            adults=adults,
-            children=children,
-            room_id=room_id,
-            status='Telefon Onaylı' 
-        )
+    try:
+        check_in_date = datetime.strptime(check_in_str, "%Y-%m-%d").date()
+        check_out_date = datetime.strptime(check_out_str, "%Y-%m-%d").date()
+    except ValueError:
+        flash("Tarih formatı geçersiz.", "danger")
+        return redirect(url_for("yonetim"))
 
-        db.session.add(new_reservation)
-        db.session.commit()
+    if check_in_date >= check_out_date:
+        flash("Çıkış tarihi, giriş tarihinden sonra olmalıdır.", "danger")
+        return redirect(url_for("yonetim"))
 
-        flash(f'{guest_name} için Manuel Rezervasyon başarıyla eklendi ve Onaylandı.', 'success')
-        return redirect(url_for('admin_dashboard'))
-
-    # GET isteği (formu göstermek için)
-    formatted_rooms = []
-    # Oda numarasına göre doğru sıralama
-    sorted_rooms = Room.query.order_by(cast(Room.room_number, Integer)).all()
-    
-    for index, room in enumerate(sorted_rooms):
-        # Kullanıcıya gösterilecek isim
-        room_name = CUSTOM_CALENDAR_NAMES[index] if index < len(CUSTOM_CALENDAR_NAMES) else str(room.room_number)
-        room.display_name = f"{room_name} ({room.room_number})"
-        formatted_rooms.append(room)
-    
-    return render_template('add_reservation.html', 
-                            title="Manuel Rezervasyon Ekle", 
-                            nav_links=NAV_LINKS, 
-                            rooms=formatted_rooms, 
-                            oda_tipleri=ODA_TIPLERI_DICT,
-                            datetime=datetime)
-
-
-
-@app.route('/admin/update-status/<int:reservation_id>/<string:new_status>')
-@login_required
-def update_reservation_status(reservation_id, new_status):
-    # YÖNETİCİ KONTROLÜ
-    if not current_user.is_admin:
-        flash("Bu işleme erişim yetkiniz bulunmamaktadır.", 'danger')
-        return redirect(url_for('profil')) 
-    
-    reservation = Reservation.query.get_or_404(reservation_id)
-
-    allowed_statuses = ['Online Onay Bekliyor', 'Telefon Onaylı', 'Onaylandı', 'Giriş Yaptı', 'Çıkış Yaptı', 'İptal']
-    if new_status not in allowed_statuses:
-        flash("Hata: Geçersiz rezervasyon durumu.", 'danger')
-        return redirect(url_for('admin_dashboard'))
-
-    # Oda Atama Mantığı (Sadece Onaylandı durumuna geçerken çalışır)
-    room_id_param = request.args.get('room_id')
-    if new_status == 'Onaylandı' and room_id_param:
+    room_id = None
+    if not is_full_hotel:
+        if not room_id_raw:
+            flash("Tüm oteli kapatmıyorsanız oda seçmelisiniz.", "danger")
+            return redirect(url_for("yonetim"))
         try:
-            chosen_room_id = int(room_id_param)
+            room_id = int(room_id_raw)
         except ValueError:
-            flash("Hata: Geçersiz oda seçimi.", 'danger')
-            return redirect(url_for('admin_dashboard'))
+            flash("Geçersiz oda seçimi.", "danger")
+            return redirect(url_for("yonetim"))
 
-        # Çakışma kontrolü (Kritik)
-        conflict = Reservation.query.filter(
-            Reservation.room_id == chosen_room_id,
-            Reservation.id != reservation.id,
-            and_(
-                Reservation.check_out > reservation.check_in,
-                Reservation.check_in < reservation.check_out,
-                or_(
-                    Reservation.status == 'Onaylandı',
-                    Reservation.status == 'Telefon Onaylı',
-                    Reservation.status == 'Giriş Yaptı'
-                )
-            )
+    if is_full_hotel:
+        existing_full_hotel_block = ManualBlock.query.filter(
+            ManualBlock.is_full_hotel.is_(True),
+            ManualBlock.check_out > check_in_date,
+            ManualBlock.check_in < check_out_date
         ).first()
 
-        if conflict:
-            conflict_room = Room.query.get(chosen_room_id)
-            flash(f"Hata: Seçilen oda ({conflict_room.room_number if conflict_room else chosen_room_id}) bu tarihlerde dolu!", 'danger')
-            return redirect(url_for('admin_dashboard'))
+        if existing_full_hotel_block:
+            flash("Bu tarihlerde zaten tüm otel için bir blokaj bulunuyor.", "danger")
+            return redirect(url_for("yonetim"))
+    else:
+        existing_reservation = Reservation.query.filter(
+            Reservation.room_id == room_id,
+            Reservation.check_out > check_in_date,
+            Reservation.check_in < check_out_date,
+            Reservation.status.in_(["Yeni Talep", "Onaylandı", "Telefon Onaylı", "Giriş Yaptı"])
+        ).first()
 
-        # Çakışma yoksa odayı ata
-        reservation.room_id = chosen_room_id
+        if existing_reservation:
+            flash("Bu tarihlerde oda müsait değil.", "danger")
+            return redirect(url_for("yonetim"))
+
+        existing_block = ManualBlock.query.filter(
+            ManualBlock.room_id == room_id,
+            ManualBlock.check_out > check_in_date,
+            ManualBlock.check_in < check_out_date
+        ).first()
+
+        if existing_block:
+            flash("Bu tarihlerde oda müsait değil.", "danger")
+            return redirect(url_for("yonetim"))
+
+    new_block = ManualBlock(
+        guest_name=guest_name or None,
+        source=source,
+        check_in=check_in_date,
+        check_out=check_out_date,
+        room_id=room_id,
+        is_full_hotel=is_full_hotel,
+        note=note or None
+    )
+
+    db.session.add(new_block)
+    db.session.commit()
+
+    flash("Blokaj / dış rezervasyon başarıyla eklendi.", "success")
+    return redirect(url_for("yonetim"))
+
+
+@app.route("/yonetim/blok-sil/<int:block_id>")
+@manager_required
+def yonetim_blok_sil(block_id):
+    block = ManualBlock.query.get_or_404(block_id)
+    db.session.delete(block)
+    db.session.commit()
+    flash("Blokaj kaydı silindi.", "warning")
+    return redirect(url_for("yonetim"))
+
+
+@app.route("/yonetim/rezervasyon-durum/<int:reservation_id>", methods=["POST"])
+@manager_required
+def yonetim_rezervasyon_durum(reservation_id):
+    reservation = Reservation.query.get_or_404(reservation_id)
+    new_status = request.form.get("status", "").strip()
+
+    allowed_statuses = [
+        "Yeni Talep",
+        "Onaylandı",
+        "Telefon Onaylı",
+        "Giriş Yaptı",
+        "Tamamlandı",
+        "İptal"
+    ]
+
+    if new_status not in allowed_statuses:
+        flash("Geçersiz rezervasyon durumu.", "danger")
+        return redirect(url_for("yonetim"))
 
     reservation.status = new_status
-    
-    if new_status == 'Çıkış Yaptı':
-        pass # Sadakat puanı verme mantığı buraya eklenecek
-
-    db.session.commit()
-    
-    flash(f'Rezervasyon ID {reservation_id} durumu \"{new_status}\" olarak güncellendi.', 'success')
-    return redirect(url_for('admin_dashboard'))
-
-@app.route('/admin/delete-reservation/<int:reservation_id>')
-@login_required
-def delete_reservation(reservation_id):
-    # YÖNETİCİ KONTROLÜ
-    if not current_user.is_admin:
-        flash("Bu işleme erişim yetkiniz bulunmamaktadır.", 'danger')
-        return redirect(url_for('profil')) 
-    
-    reservation = Reservation.query.get_or_404(reservation_id)
-    guest_name = reservation.guest_name 
-
-    db.session.delete(reservation)
     db.session.commit()
 
-    flash(f'{guest_name} misafirin rezervasyonu (ID: {reservation_id}) başarıyla İPTAL EDİLDİ ve silindi.', 'warning')
-    return redirect(url_for('admin_dashboard'))
+    flash("Rezervasyon durumu güncellendi.", "success")
+    return redirect(url_for("yonetim"))
 
 
+@app.route("/kvkk")
+def kvkk():
+    seo = build_seo(
+        "KVKK | Kaan Motel",
+        "Kaan Motel kişisel verilerin korunması ve aydınlatma metni bilgileri."
+    )
+    return render_template("kvkk.html", title=seo["title"], description=seo["description"])
 
 
-# --- UYGULAMA BAŞLANGIÇ KISMI ---
+@app.errorhandler(404)
+def not_found(error):
+    return render_template(
+        "404.html",
+        title="Sayfa Bulunamadı | Kaan Motel",
+        description="Aradığınız sayfa bulunamadı."
+    ), 404
 
-@app.route('/kvkk-aydinlatma')
-def kvkk_aydinlatma():
-    # KVKK metnini bu yeni sayfaya gönderiyoruz
-    return render_template('kvkk_metni.html', 
-                           title="KVKK Metni", 
-                           nav_links=NAV_LINKS,
-                           KVKK_TEXT=KVKK_TEXT) # Dikkat: Değişken adı aynı
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with app.app_context():
-        # Veritabanını oluştur
         db.create_all()
 
-        # 🏠 Başlangıç odalarını ekle (eğer hiç oda yoksa)
         if Room.query.count() == 0:
             initial_rooms = [
-                Room(room_number='STD01', room_type='standart', capacity=2),
-                Room(room_number='STD02', room_type='standart', capacity=2),
-                Room(room_number='STD03', room_type='standart', capacity=2),
-                Room(room_number='STD04', room_type='standart', capacity=2),
-                Room(room_number='SUI01', room_type='suit', capacity=5),
-                Room(room_number='PET01', room_type='petsuit', capacity=4),
-                Room(room_number='STD07', room_type='standart', capacity=2),
-                Room(room_number='LSU01', room_type='largesuit', capacity=3),
+                Room(room_number="STD01", room_type="standart", capacity=3),
+                Room(room_number="STD02", room_type="standart", capacity=3),
+                Room(room_number="STD03", room_type="standart", capacity=3),
+                Room(room_number="STD04", room_type="standart", capacity=3),
+                Room(room_number="SUI01", room_type="suit", capacity=5),
+                Room(room_number="PET01", room_type="petsuit", capacity=4),
+                Room(room_number="STD07", room_type="standart", capacity=3),
+                Room(room_number="STD08", room_type="standart", capacity=3),
             ]
-
             db.session.add_all(initial_rooms)
             db.session.commit()
-            print(f"\n✅ Başlangıç odaları başarıyla oluşturuldu ({Room.query.count()} oda)\n")
+            print(f"✅ Başlangıç odaları oluşturuldu: {Room.query.count()} oda")
 
-        # 👑 Admin kullanıcısını kontrol et / oluştur
-        if not User.query.filter_by(username='admin').first():
-            admin_user = User(
-                username='admin',
-                email='admin@kaanmotel.com',
-                password_hash=generate_password_hash('sifre123', method='pbkdf2:sha256'),
-                is_admin=True
-            )
-            db.session.add(admin_user)
-            db.session.commit()
-            print("\n✅ İlk admin kullanıcısı oluşturuldu → Kullanıcı Adı: admin | Şifre: sifre123\n")
-
-    # 🌐 Sunucuyu başlat
-    port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port, debug=True)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port, debug=True)

@@ -3,156 +3,345 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    
-    <!-- Dinamik Title ve Description -->
+
     <title>{{ title | default('Kaan Motel - Avşa Adası') }}</title>
-    <meta name="description" content="{{ description | default('Kaan Motel - Avşa Adası’nda huzurlu bir tatil deneyimi. Denize sıfır konum, konforlu odalar, yat kulübü etkinlikleri ve evcil hayvan dostu seçenekler.') }}">
-    
-    <!-- SEO Meta Etiketleri -->
-    <meta name="keywords" content="Kaan Motel, Avşa Adası, otel, tatil, konaklama, denize sıfır otel, yat kulübü, Avşa otel, evcil hayvan dostu otel">
+    <meta name="description" content="{{ description | default('Kaan Motel, Avşa Adası’nda huzurlu, samimi ve konforlu konaklama sunar.') }}">
+    <meta name="keywords" content="Avşa otelleri, Avşa otel fiyatları, Avşa'da nerede kalınır, Avşa Adası otel, Avşa motel, butik otel Avşa">
     <meta name="author" content="Kaan Motel">
     <meta name="robots" content="index, follow">
     <meta name="language" content="Turkish">
-    <meta name="description" content="Avşa Adası'nda uygun fiyatlı motel arayanlar için Kaan Motel. Sessiz, konforlu konaklama ve uzaktan çalışma dostu ortam. Avşa motel fiyatları için hemen inceleyin.">
-    
-    <!-- Canonical URL -->
+
     <link rel="canonical" href="{{ request.url }}">
-    
-    <!-- Open Graph (Sosyal Medya) -->
+
     <meta property="og:title" content="{{ title | default('Kaan Motel - Avşa Adası') }}">
-    <meta property="og:description" content="{{ description | default('Avşa Adası’nda denize sıfır konumu, yat kulübü ve konforlu odalarıyla unutulmaz bir tatil.') }}">
+    <meta property="og:description" content="{{ description | default('Kaan Motel, Avşa Adası’nda huzurlu, samimi ve konforlu konaklama sunar.') }}">
     <meta property="og:image" content="{{ url_for('static', filename='kaan_logo.png', _external=True) }}">
     <meta property="og:url" content="{{ request.url }}">
     <meta property="og:type" content="website">
-    
-    <!-- Twitter Card -->
+
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="{{ title | default('Kaan Motel - Avşa Adası') }}">
-    <meta name="twitter:description" content="{{ description | default('Avşa Adası’nda denize sıfır konumu, yat kulübü ve konforlu odalarıyla unutulmaz bir tatil.') }}">
+    <meta name="twitter:description" content="{{ description | default('Kaan Motel, Avşa Adası’nda huzurlu, samimi ve konforlu konaklama sunar.') }}">
     <meta name="twitter:image" content="{{ url_for('static', filename='kaan_logo.png', _external=True) }}">
-    
-    <!-- Favicon -->
+
     <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
 
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400..700&family=Open+Sans:wght@300;400;600&family=Playfair+Display:wght@400;600&display=swap" rel="stylesheet">
-
-    <!-- Bootstrap -->
+    <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@500;700&family=Cormorant+Garamond:wght@400;500;600;700&family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
-
-    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
 
-    <!-- Swiper -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@10/swiper-bundle.min.css"/>
+    <style>
+        :root {
+            --cream: #f6f1e7;
+            --sand: #e7dcc8;
+            --stone: #b9ab91;
+            --terracotta: #b7754f;
+            --olive: #6f7a5f;
+            --sea: #6f8c94;
+            --ink: #2c2a28;
+            --white: #ffffff;
+        }
 
-    <!-- Özel CSS -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Open Sans', sans-serif;
+            background: linear-gradient(180deg, #f8f4ec 0%, #f6f1e7 100%);
+            color: var(--ink);
+        }
+
+        .boho-navbar {
+            background: rgba(246, 241, 231, 0.92);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(111, 140, 148, 0.15);
+            box-shadow: 0 10px 30px rgba(44, 42, 40, 0.06);
+        }
+
+        .navbar-brand-wrap {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .navbar-logo {
+            width: 68px;
+            height: 68px;
+            object-fit: cover;
+            border-radius: 50%;
+            border: 2px solid rgba(183, 117, 79, 0.18);
+            background: #fff;
+        }
+
+        .brand-title {
+            font-family: 'Dancing Script', cursive;
+            font-size: 2.2rem;
+            line-height: 1;
+            color: var(--terracotta);
+        }
+
+        .brand-subtitle {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1rem;
+            color: var(--olive);
+            letter-spacing: 0.3px;
+        }
+
+        .navbar-nav .nav-link {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.25rem;
+            color: var(--ink) !important;
+            margin: 0 8px;
+            position: relative;
+        }
+
+        .navbar-nav .nav-link:hover {
+            color: var(--terracotta) !important;
+        }
+
+        .navbar-nav .nav-link::after {
+            content: "";
+            position: absolute;
+            left: 8px;
+            right: 8px;
+            bottom: 4px;
+            height: 1px;
+            background: var(--terracotta);
+            transform: scaleX(0);
+            transition: transform 0.2s ease;
+        }
+
+        .navbar-nav .nav-link:hover::after {
+            transform: scaleX(1);
+        }
+
+        .btn-whatsapp {
+            background: var(--terracotta);
+            border: none;
+            color: #fff !important;
+            border-radius: 999px;
+            padding: 11px 20px;
+            font-weight: 700;
+            box-shadow: 0 10px 24px rgba(183, 117, 79, 0.22);
+        }
+
+        .btn-whatsapp:hover {
+            background: #a76540;
+            color: #fff !important;
+            text-decoration: none;
+        }
+
+        .social-icons a {
+            color: var(--sea);
+            margin-left: 12px;
+            font-size: 1.15rem;
+        }
+
+        .social-icons a:hover {
+            color: var(--terracotta);
+            text-decoration: none;
+        }
+
+        .site-main section {
+            padding: 84px 0;
+        }
+
+        .section-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 2.7rem;
+            font-weight: 700;
+            color: var(--ink);
+            margin-bottom: 12px;
+        }
+
+        .section-subtitle {
+            color: #635d57;
+            max-width: 760px;
+            margin: 0 auto 40px auto;
+            line-height: 1.8;
+        }
+
+        .flash-wrap {
+            position: sticky;
+            top: 84px;
+            z-index: 1030;
+        }
+
+        .site-footer {
+            background: linear-gradient(180deg, #efe5d5 0%, #eadfcf 100%);
+            border-top: 1px solid rgba(111, 140, 148, 0.18);
+        }
+
+        .footer-title {
+            font-family: 'Dancing Script', cursive;
+            font-size: 2rem;
+            color: var(--terracotta);
+        }
+
+        .footer-social a {
+            color: var(--sea);
+            font-size: 1.25rem;
+            margin: 0 10px;
+        }
+
+        .footer-social a:hover {
+            color: var(--terracotta);
+            text-decoration: none;
+        }
+
+        .floating-whatsapp {
+            position: fixed;
+            right: 18px;
+            bottom: 18px;
+            z-index: 9999;
+            background: #25D366;
+            color: #fff;
+            width: 58px;
+            height: 58px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.65rem;
+            box-shadow: 0 12px 28px rgba(0,0,0,0.16);
+        }
+
+        .floating-whatsapp:hover {
+            color: #fff;
+            text-decoration: none;
+            background: #1ebe5d;
+        }
+
+        .mini-manager-link {
+            font-size: 0.9rem;
+            color: #7f776d;
+        }
+
+        .mini-manager-link:hover {
+            color: var(--terracotta);
+            text-decoration: none;
+        }
+
+        @media (max-width: 991px) {
+            .brand-title {
+                font-size: 1.8rem;
+            }
+
+            .brand-subtitle {
+                font-size: 0.92rem;
+            }
+
+            .navbar-nav .nav-link {
+                font-size: 1.2rem;
+            }
+
+            .social-icons {
+                margin-top: 12px;
+            }
+        }
+    </style>
 
     {% block head %}{% endblock %}
 </head>
 <body>
 
-<!-- Kampanya Paneli -->
-<div id="kampanyaPanel" class="position-fixed top-50 start-50 translate-middle bg-warning p-4 rounded shadow-lg" style="z-index: 1050; max-width: 400px; display: none;">
-    <div class="d-flex justify-content-between align-items-start">
-        <h5 class="mb-2">Kampanya!</h5>
-        <button type="button" 
-        class="close text-dark" 
-        aria-label="Kapat"
-        style="font-size: 1.5rem; font-weight: bold; background: none; border: none;"
-        onclick="document.getElementById('kampanyaPanel').style.display='none';">
-    &times;
-</button>
-    </div>
-    <p class="mb-0">Sitemize özel fırsatları kaçırmayın! Hemen rezervasyon yapın ve avantajlardan yararlanın.</p>
-</div>
-
-<!-- NAVBAR -->
-<nav class="navbar navbar-expand-lg navbar-light bg-light py-4 shadow-sm">
+<nav class="navbar navbar-expand-lg navbar-light boho-navbar sticky-top py-3">
     <div class="container">
-        <a class="navbar-brand d-flex align-items-center" href="{{ url_for('index') }}">
-            <img src="{{ url_for('static', filename='kaan_logo.png') }}"
-                 alt="Kaan Motel Logo"
-                 width="150"
-                 height="150"
-                 class="rounded-circle mr-2 border">
-            <div class="d-flex flex-column">
-                <span style="font-family: 'Dancing Script', cursive; font-size: 2.8rem; font-weight: 700;">Kaan Motel</span>
-                <small class="text-muted" style="font-size: 0.8rem;">Avşa Adası'nda Huzurlu Kaçış Noktanız</small>
+        <a class="navbar-brand" href="{{ url_for('index') }}">
+            <div class="navbar-brand-wrap">
+                <img src="{{ url_for('static', filename='kaan_logo.png') }}" alt="Kaan Motel Logo" class="navbar-logo">
+                <div>
+                    <div class="brand-title">Kaan Motel</div>
+                    <div class="brand-subtitle">Avşa Adası'nda Huzurlu Kaçış Noktanız</div>
+                </div>
             </div>
         </a>
 
-        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav"
-                aria-controls="navbarNav" aria-expanded="false" aria-label="Menüyü Aç">
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav">
             <span class="navbar-toggler-icon"></span>
         </button>
 
         <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav ml-auto align-items-lg-center text-center">
+                <li class="nav-item"><a class="nav-link" href="{{ url_for('index') }}#anasayfa">Anasayfa</a></li>
+                <li class="nav-item"><a class="nav-link" href="{{ url_for('index') }}#hakkimizda">Hakkımızda</a></li>
                 <li class="nav-item"><a class="nav-link" href="{{ url_for('odalar') }}">Odalar</a></li>
                 <li class="nav-item"><a class="nav-link" href="{{ url_for('galeri') }}">Galeri</a></li>
-                <li class="nav-item"><a class="nav-link" href="{{ url_for('konum_iletisim') }}">Konum & İletişim</a></li>
-                <li class="nav-item"><a class="nav-link" href="{{ url_for('ada_rehberi') }}">Ada Rehberi</a></li>
-                <li class="nav-item mt-2 mt-lg-0">
-                    <a class="btn btn-outline-primary btn-lg px-5 py-2 fw-bold shadow-sm" 
-                       href="{{ url_for('yat_klubu') }}" 
-                       style="font-size: 1rem; letter-spacing: 0.2px;">
-                        <i class="fas fa-ship mr-1"></i> Yat Kulübü
+                <li class="nav-item"><a class="nav-link" href="{{ url_for('index') }}#yorumlar">Yorumlar</a></li>
+                <li class="nav-item"><a class="nav-link" href="{{ url_for('index') }}#iletisim">İletişim</a></li>
+                <li class="nav-item"><a class="nav-link" href="{{ url_for('index') }}#rezervasyon">Rezervasyon</a></li>
+
+                <li class="nav-item mt-3 mt-lg-0 ml-lg-3">
+                    <a href="{{ contact_info.whatsapp_link }}" target="_blank" class="btn btn-whatsapp">
+                        <i class="fab fa-whatsapp mr-2"></i>WhatsApp
                     </a>
                 </li>
-                <li class="nav-item mt-2 mt-lg-0 ml-lg-2">
-                    <a class="btn btn-primary btn-sm text-white px-3" href="{{ url_for('rezervasyon_formu') }}">
-                        Rezervasyon Yap
-                    </a>
-                </li>
-<li class="nav-item">
-    <a class="nav-link" href="{{ url_for('blog_index') }}">Blog</a>
-</li>
-                {% if current_user.is_authenticated %}
-                    {% if current_user.is_admin %}
-                        <li class="nav-item"><a class="nav-link" href="{{ url_for('admin_dashboard') }}">Yönetici Paneli</a></li>
-                    {% else %}
-                        <li class="nav-item"><a class="nav-link" href="{{ url_for('profil') }}">Profilim</a></li>
+
+                <li class="nav-item social-icons d-flex align-items-center justify-content-center ml-lg-3">
+                    <a href="{{ contact_info.instagram }}" target="_blank" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+                    <a href="{{ contact_info.facebook }}" target="_blank" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a>
+                    {% if manager_logged_in %}
+                        <a href="{{ url_for('yonetim') }}" aria-label="Yönetim"><i class="fas fa-key"></i></a>
                     {% endif %}
-                    <li class="nav-item"><a class="nav-link" href="{{ url_for('logout') }}">Çıkış Yap</a></li>
-                {% else %}
-                    <li class="nav-item"><a class="nav-link" href="{{ url_for('login') }}">Giriş Yap</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{{ url_for('register') }}">Kayıt Ol</a></li>
-                {% endif %}
+                </li>
             </ul>
         </div>
     </div>
 </nav>
 
-<!-- SAYFA İÇERİĞİ -->
+<div class="flash-wrap">
+    <div class="container pt-3">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category if category in ['success','danger','warning','info'] else 'info' }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="close" data-dismiss="alert">
+                            <span>&times;</span>
+                        </button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+    </div>
+</div>
+
 <main class="site-main">
     {% block content %}{% endblock %}
 </main>
 
-<!-- FOOTER -->
-<footer class="site-footer py-4 mt-5 bg-light">
+<footer class="site-footer py-5">
     <div class="container text-center">
-        <p class="mb-1">&copy; 2025 Kaan Motel. Tüm hakları saklıdır. | Avşa Adası</p>
-        <small class="text-primary">Fırsatlardan yararlanmak için üye olmayı unutmayın!</small>
+        <div class="footer-title mb-2">Kaan Motel</div>
+        <p class="mb-2">Avşa Adası’nda sade, huzurlu ve samimi bir butik konaklama deneyimi.</p>
+        <p class="mb-2">
+            <strong>Telefon:</strong> <a href="tel:{{ contact_info.phone_raw }}">{{ contact_info.phone }}</a><br>
+            <strong>E-posta:</strong> <a href="mailto:{{ contact_info.email }}">{{ contact_info.email }}</a>
+        </p>
+
+        <div class="footer-social my-3">
+            <a href="{{ contact_info.instagram }}" target="_blank"><i class="fab fa-instagram"></i></a>
+            <a href="{{ contact_info.facebook }}" target="_blank"><i class="fab fa-facebook-f"></i></a>
+            <a href="{{ contact_info.whatsapp_link }}" target="_blank"><i class="fab fa-whatsapp"></i></a>
+        </div>
+
+        <div class="mb-2">
+            <a class="mini-manager-link" href="{{ url_for('yonetim_login') }}">Yönetim Girişi</a>
+        </div>
+
+        <small class="text-muted">&copy; {{ current_year }} Kaan Motel. Tüm hakları saklıdır.</small>
     </div>
 </footer>
 
-<!-- JS -->
+<a href="{{ contact_info.whatsapp_link }}" target="_blank" class="floating-whatsapp" aria-label="WhatsApp ile iletişim">
+    <i class="fab fa-whatsapp"></i>
+</a>
+
 <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
 <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/swiper@10/swiper-bundle.min.js"></script>
 
-<!-- Kampanya Panelini Göster -->
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-    const panel = document.getElementById('kampanyaPanel');
-    panel.style.display = 'block';
-});
-</script>
-
-<!-- JSON-LD Schema.org -->
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -161,10 +350,11 @@ document.addEventListener('DOMContentLoaded', function () {
   "image": "{{ url_for('static', filename='kaan_logo.png', _external=True) }}",
   "address": {
     "@type": "PostalAddress",
-    "streetAddress": "Avşa Adası",
-    "addressLocality": "Avşa",
+    "streetAddress": "Deniz Mahallesi, Değirmenardı Mevkii, Zafer Sokak No:6",
+    "addressLocality": "Avşa Adası",
     "addressCountry": "TR"
   },
+  "telephone": "{{ contact_info.phone }}",
   "url": "{{ request.url_root }}"
 }
 </script>

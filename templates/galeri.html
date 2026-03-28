@@ -1,132 +1,308 @@
 {% extends "base.html" %}
 
+{% block head %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css"/>
+
+<style>
+    .gallery-hero {
+        padding: 70px 0 30px 0;
+        text-align: center;
+    }
+
+    .gallery-hero h1 {
+        font-family: 'Cormorant Garamond', serif;
+        font-size: 3rem;
+        font-weight: 700;
+        margin-bottom: 14px;
+    }
+
+    .gallery-hero p {
+        max-width: 760px;
+        margin: 0 auto;
+        color: #6b625b;
+        line-height: 1.9;
+    }
+
+    .gallery-shell {
+        background: rgba(255,255,255,0.72);
+        border-radius: 28px;
+        box-shadow: 0 20px 46px rgba(44,42,40,0.07);
+        padding: 28px;
+    }
+
+    .gallery-main-swiper {
+        border-radius: 24px;
+        overflow: hidden;
+        margin-bottom: 18px;
+    }
+
+    .gallery-main-slide {
+        position: relative;
+        height: 580px;
+        overflow: hidden;
+        border-radius: 24px;
+    }
+
+    .gallery-main-slide img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+    }
+
+    .gallery-caption {
+        position: absolute;
+        left: 24px;
+        right: 24px;
+        bottom: 24px;
+        background: rgba(35, 31, 28, 0.42);
+        backdrop-filter: blur(8px);
+        color: #fff;
+        padding: 18px 20px;
+        border-radius: 18px;
+    }
+
+    .gallery-caption h3 {
+        font-family: 'Cormorant Garamond', serif;
+        font-size: 1.8rem;
+        margin-bottom: 6px;
+    }
+
+    .gallery-caption p {
+        margin-bottom: 0;
+        color: rgba(255,255,255,0.88);
+    }
+
+    .gallery-thumbs-swiper {
+        padding-top: 6px;
+    }
+
+    .gallery-thumb-slide {
+        height: 105px;
+        border-radius: 18px;
+        overflow: hidden;
+        cursor: pointer;
+        opacity: 0.65;
+        transition: all 0.25s ease;
+        border: 2px solid transparent;
+    }
+
+    .gallery-thumb-slide img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .swiper-slide-thumb-active.gallery-thumb-slide {
+        opacity: 1;
+        border-color: #b7754f;
+        transform: translateY(-2px);
+    }
+
+    .gallery-nav {
+        color: #fff;
+        width: 48px;
+        height: 48px;
+        background: rgba(183, 117, 79, 0.82);
+        border-radius: 50%;
+        backdrop-filter: blur(8px);
+    }
+
+    .gallery-nav:after {
+        font-size: 18px;
+        font-weight: 700;
+    }
+
+    .gallery-grid-title {
+        font-family: 'Cormorant Garamond', serif;
+        font-size: 2.2rem;
+        font-weight: 700;
+        margin: 50px 0 20px 0;
+        text-align: center;
+    }
+
+    .gallery-grid-card {
+        background: rgba(255,255,255,0.72);
+        border-radius: 22px;
+        overflow: hidden;
+        box-shadow: 0 14px 32px rgba(44,42,40,0.06);
+        height: 100%;
+        transition: transform 0.25s ease, box-shadow 0.25s ease;
+    }
+
+    .gallery-grid-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 20px 42px rgba(44,42,40,0.10);
+    }
+
+    .gallery-grid-card img {
+        width: 100%;
+        height: 260px;
+        object-fit: cover;
+    }
+
+    .gallery-grid-body {
+        padding: 18px 18px 20px;
+    }
+
+    .gallery-grid-body h5 {
+        font-family: 'Cormorant Garamond', serif;
+        font-size: 1.5rem;
+        margin-bottom: 8px;
+    }
+
+    .gallery-grid-body p {
+        color: #6a625a;
+        margin-bottom: 0;
+        line-height: 1.7;
+    }
+
+    .empty-state {
+        background: rgba(255,255,255,0.72);
+        border-radius: 24px;
+        padding: 40px 24px;
+        text-align: center;
+        box-shadow: 0 16px 40px rgba(44,42,40,0.06);
+    }
+
+    @media (max-width: 991px) {
+        .gallery-main-slide {
+            height: 430px;
+        }
+    }
+
+    @media (max-width: 767px) {
+        .gallery-main-slide {
+            height: 320px;
+        }
+
+        .gallery-thumb-slide {
+            height: 78px;
+        }
+
+        .gallery-caption {
+            left: 14px;
+            right: 14px;
+            bottom: 14px;
+            padding: 14px 16px;
+        }
+
+        .gallery-caption h3 {
+            font-size: 1.4rem;
+        }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-<section class="section-title py-4 bg-light border-bottom">
+<section class="gallery-hero">
     <div class="container">
-        <h1 class="h3 mb-1">Fotoğraf Galerisi</h1>
-        <p class="text-muted mb-3">Motelimizden ve Avşa Adası'ndan en güzel anlar.</p>
+        <h1>Galeri</h1>
+        <p>
+            Kaan Motel’in odalarını, bahçesini ve Avşa Adası’ndaki sakin atmosferini daha yakından keşfedin.
+            Daha zarif ve akıcı bir galeri deneyimi için görsellerimizi aşağıdan inceleyebilirsiniz.
+        </p>
     </div>
 </section>
 
-<section class="dashboard-content py-5">
+<section class="pb-5">
     <div class="container">
-        
         {% if gallery_items %}
-        
-        <div id="mainGalleryCarousel" class="carousel slide mb-4 shadow-lg border rounded-3 overflow-hidden" data-bs-ride="carousel">
-            
-            <div class="carousel-indicators">
-                {% for item in gallery_items %}
-                <button type="button" data-bs-target="#mainGalleryCarousel" data-bs-slide-to="{{ loop.index0 }}" 
-                        class="{% if loop.first %}active{% endif %}" aria-current="{% if loop.first %}true{% else %}false{% endif %}" aria-label="Slide {{ loop.index }}"></button>
-                {% endfor %}
-            </div>
-            
-            <div class="carousel-inner">
-                {% for item in gallery_items %}
-                <div class="carousel-item {% if loop.first %}active{% endif %}">
-                    <img src="{{ item.path }}" class="d-block w-100 carousel-enlarged-image" alt="{{ item.title }}">
-                    
+        <div class="gallery-shell">
+            <div class="swiper gallery-main-swiper">
+                <div class="swiper-wrapper">
+                    {% for item in gallery_items %}
+                    <div class="swiper-slide">
+                        <div class="gallery-main-slide">
+                            <img src="{{ item.path }}" alt="{{ item.title }}">
+                            <div class="gallery-caption">
+                                <h3>{{ item.title }}</h3>
+                                <p>{{ item.description }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
                 </div>
-                {% endfor %}
+
+                <div class="swiper-button-next gallery-nav"></div>
+                <div class="swiper-button-prev gallery-nav"></div>
             </div>
-            
-            <button class="carousel-control-prev" type="button" data-bs-target="#mainGalleryCarousel" data-bs-slide="prev">
-                <span class="carousel-control-prev-icon" aria-hidden="true"></span>
-                <span class="visually-hidden">Önceki</span>
-            </button>
-            <button class="carousel-control-next" type="button" data-bs-target="#mainGalleryCarousel" data-bs-slide="next">
-                <span class="carousel-control-next-icon" aria-hidden="true"></span>
-                <span class="visually-hidden">Sonraki</span>
-            </button>
+
+            <div class="swiper gallery-thumbs-swiper">
+                <div class="swiper-wrapper">
+                    {% for item in gallery_items %}
+                    <div class="swiper-slide gallery-thumb-slide">
+                        <img src="{{ item.path }}" alt="{{ item.title }}">
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
         </div>
 
-        <h4 class="mb-3">Tüm Görseller</h4>
-        <div class="d-flex flex-wrap justify-content-center" id="thumbnail-strip">
+        <h2 class="gallery-grid-title">Tüm Görseller</h2>
+
+        <div class="row">
             {% for item in gallery_items %}
-            {% set loop_index = loop.index0 %}
-            <div class="thumbnail-item m-2">
-                <img src="{{ item.path }}" 
-                     alt="{{ item.title }}"
-                     data-bs-target="#mainGalleryCarousel" 
-                     data-bs-slide-to="{{ loop_index }}"
-                     class="img-thumbnail rounded shadow-sm" 
-                     style="width: 120px; height: 80px; object-fit: cover; cursor: pointer;">
+            <div class="col-lg-4 col-md-6 mb-4">
+                <div class="gallery-grid-card">
+                    <img src="{{ item.path }}" alt="{{ item.title }}">
+                    <div class="gallery-grid-body">
+                        <h5>{{ item.title }}</h5>
+                        <p>{{ item.description }}</p>
+                    </div>
+                </div>
             </div>
             {% endfor %}
         </div>
-
         {% else %}
-        <div class="alert alert-info text-center" role="alert">
-            Galeri için henüz görsel yüklenmemiş.
+        <div class="empty-state">
+            <h3 class="mb-3" style="font-family:'Cormorant Garamond', serif; font-size:2rem;">Henüz galeri görseli bulunamadı</h3>
+            <p class="mb-0 text-muted">`static/gallery` klasöründeki görselleri kontrol edin.</p>
         </div>
         {% endif %}
-        
     </div>
 </section>
+{% endblock %}
 
-<style>
-/* Büyütülmüş resimlerin yükseklik/genişlik sabitlenmesi (Carousel içinde) */
-.carousel-enlarged-image {
-    height: 60vh; /* Görselin yüksekliğini ekranın %60'ı olarak ayarlar */
-    
-    /* 🚨 DEĞİŞİKLİK BURADA: 'cover' yerine 'contain' kullanıyoruz */
-    object-fit: contain; 
-    
-    width: 100%; /* Genişliğin tamamını kaplamasını sağla */
-    
-    /* Gerekirse, kenarlarda boşluk bırakarak ortalamak için: */
-    background-color: #f8f9fa; /* Arka plan rengi verilebilir */
-}
-
-/* Thumbnail'lerin daha düzgün görünmesi için */
-/* ... (Diğer stil kuralları burada kalabilir) ... */
-</style>
 {% block scripts %}
-{{ super() }} 
+<script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
 
 <script>
-document.addEventListener('DOMContentLoaded', function () {
-    
-    // 1. Bootstrap Carousel nesnesini alıyoruz (ID: mainGalleryCarousel)
-    const mainCarouselElement = document.getElementById('mainGalleryCarousel');
-    const mainCarousel = new bootstrap.Carousel(mainCarouselElement);
-    
-    // --- A. THUMBNAIL TIKLAMALARINI ÇALIŞTIRMA (ZATEN ÇALIŞIYOR OLMALI) ---
-    const thumbnails = document.querySelectorAll('#thumbnail-strip .thumbnail-item img');
-
-    thumbnails.forEach((thumbnail, index) => {
-        thumbnail.addEventListener('click', function() {
-            // Küçük resme tıklandığında Carousel'i ilgili indekse kaydır
-            mainCarousel.to(index);
-        });
+document.addEventListener("DOMContentLoaded", function () {
+    const thumbsSwiper = new Swiper(".gallery-thumbs-swiper", {
+        spaceBetween: 12,
+        slidesPerView: 4,
+        freeMode: true,
+        watchSlidesProgress: true,
+        breakpoints: {
+            0: {
+                slidesPerView: 3
+            },
+            768: {
+                slidesPerView: 4
+            },
+            1200: {
+                slidesPerView: 5
+            }
+        }
     });
-    
-    // --- B. ÖNCEKİ/SONRAKİ BUTONLARI ÇALIŞTIRMA (GEREKLİ EKLEME) ---
-    // Bootstrap, data-bs-slide="prev/next" ile tanımlanan butonları otomatik algılar,
-    // ancak bazen JS ile tetiklemek gerekebilir veya CSS ile kapalı kalabilir.
 
-    // Genellikle bu butonlar Bootstrap JS yüklüyse otomatik çalışır.
-    // Eğer çalışmıyorsa, manuel olarak tetikleyebiliriz:
-    
-    const prevButton = document.querySelector('.carousel-control-prev');
-    const nextButton = document.querySelector('.carousel-control-next');
-
-    if (prevButton) {
-        prevButton.addEventListener('click', function(e) {
-            e.preventDefault(); // Varsayılan tarayıcı davranışını durdur
-            mainCarousel.prev(); // Bir önceki slayta git
-        });
-    }
-    
-    if (nextButton) {
-        nextButton.addEventListener('click', function(e) {
-            e.preventDefault(); // Varsayılan tarayıcı davranışını durdur
-            mainCarousel.next(); // Sonraki slayta git
-        });
-    }
+    new Swiper(".gallery-main-swiper", {
+        spaceBetween: 18,
+        loop: true,
+        speed: 900,
+        autoplay: {
+            delay: 4200,
+            disableOnInteraction: false
+        },
+        navigation: {
+            nextEl: ".gallery-main-swiper .swiper-button-next",
+            prevEl: ".gallery-main-swiper .swiper-button-prev"
+        },
+        thumbs: {
+            swiper: thumbsSwiper
+        }
+    });
 });
 </script>
-
-{% endblock %}
 {% endblock %}

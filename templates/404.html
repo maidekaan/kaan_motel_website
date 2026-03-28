@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section>
+    <div class="container text-center">
+        <h1 class="section-title">Sayfa Bulunamadı</h1>
+        <p class="section-subtitle">Aradığınız sayfa mevcut değil. Ana sayfaya dönerek devam edebilirsiniz.</p>
+        <a href="{{ url_for('index') }}" class="btn" style="background:#b7754f; color:#fff; border-radius:999px; padding:12px 24px;">
+            Ana Sayfaya Dön
+        </a>
+    </div>
+</section>
+{% endblock %}

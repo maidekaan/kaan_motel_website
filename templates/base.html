@@ -137,11 +137,26 @@
             color: var(--sea);
             margin-left: 12px;
             font-size: 1.15rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .social-icons a:hover {
             color: var(--terracotta);
             text-decoration: none;
+        }
+
+        .tripadvisor-icon {
+            width: 18px;
+            height: 18px;
+            display: block;
+            filter: brightness(0) saturate(100%) invert(59%) sepia(13%) saturate(382%) hue-rotate(145deg) brightness(89%) contrast(87%);
+            transition: filter 0.2s ease;
+        }
+
+        .tripadvisor-link:hover .tripadvisor-icon {
+            filter: brightness(0) saturate(100%) invert(49%) sepia(34%) saturate(653%) hue-rotate(335deg) brightness(95%) contrast(90%);
         }
 
         .site-main section {
@@ -282,6 +297,14 @@
                 <li class="nav-item social-icons d-flex align-items-center justify-content-center ml-lg-3">
                     <a href="{{ contact_info.instagram }}" target="_blank" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
                     <a href="{{ contact_info.facebook }}" target="_blank" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a>
+                    <a href="https://www.tripadvisor.com.tr/Hotel_Review-g7233080-d7387303-Reviews-Kaan_Motel-Avsa_Adasi_Turkish_Aegean_Coast.html"
+                       target="_blank"
+                       aria-label="Tripadvisor"
+                       class="tripadvisor-link">
+                        <img src="https://static.tacdn.com/img2/brand_refresh/Tripadvisor_logomark.svg"
+                             alt="Tripadvisor"
+                             class="tripadvisor-icon">
+                    </a>
                     {% if manager_logged_in %}
                         <a href="{{ url_for('yonetim') }}" aria-label="Yönetim"><i class="fas fa-key"></i></a>
                     {% endif %}

@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+{% set title = post.title %}
+{% set description = post.description %}
+
+{% block head %}
+<style>
+    .blog-detail-hero {
+        padding: 70px 0 20px 0;
+        text-align: center;
+    }
+
+    .blog-detail-hero h1 {
+        font-family: 'Cormorant Garamond', serif;
+        font-size: 3rem;
+        font-weight: 700;
+        margin-bottom: 14px;
+        line-height: 1.2;
+    }
+
+    .blog-detail-shell {
+        background: rgba(255,255,255,0.76);
+        border-radius: 28px;
+        box-shadow: 0 18px 42px rgba(44,42,40,0.06);
+        padding: 32px;
+    }
+
+    .blog-detail-image {
+        width: 100%;
+        border-radius: 24px;
+        margin-bottom: 28px;
+        object-fit: cover;
+        max-height: 500px;
+    }
+
+    .blog-detail-content {
+        font-size: 1.05rem;
+        line-height: 1.95;
+        color: #4f4943;
+    }
+
+    .blog-detail-content h1,
+    .blog-detail-content h2,
+    .blog-detail-content h3 {
+        font-family: 'Cormorant Garamond', serif;
+        color: #2c2a28;
+        font-weight: 700;
+        margin-top: 28px;
+        margin-bottom: 14px;
+    }
+
+    .blog-detail-content h2 {
+        font-size: 2rem;
+    }
+
+    .blog-detail-content h3 {
+        font-size: 1.6rem;
+    }
+
+    .blog-detail-content p {
+        margin-bottom: 16px;
+    }
+
+    .blog-detail-content ul,
+    .blog-detail-content ol {
+        padding-left: 20px;
+        margin-bottom: 18px;
+    }
+
+    .blog-detail-content li {
+        margin-bottom: 8px;
+    }
+
+    .blog-cta-box {
+        margin-top: 36px;
+        background: #f6f1e7;
+        border-radius: 22px;
+        padding: 24px;
+    }
+
+    .blog-cta-box h3 {
+        font-family: 'Cormorant Garamond', serif;
+        font-size: 1.8rem;
+        margin-bottom: 10px;
+    }
+
+    .blog-cta-box p {
+        margin-bottom: 0;
+        color: #655f59;
+        line-height: 1.8;
+    }
+
+    @media (max-width: 767px) {
+        .blog-detail-hero h1 {
+            font-size: 2.3rem;
+        }
+
+        .blog-detail-shell {
+            padding: 22px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="blog-detail-hero">
+    <div class="container">
+        <h1>{{ post.title }}</h1>
+    </div>
+</section>
+
+<section class="pb-5">
+    <div class="container">
+        <div class="blog-detail-shell" style="max-width: 920px; margin: 0 auto;">
+            {% if post.image %}
+            <img src="{{ post.image }}" alt="{{ post.title }}" class="blog-detail-image">
+            {% endif %}
+
+            <div class="blog-detail-content">
+                {{ post.content }}
+            </div>
+
+            <div class="blog-cta-box">
+                <h3>Avşa’da Konaklama</h3>
+                <p>
+                    Avşa Adası’nı keşfederken denize yakın, bahçe içinde ve sakin bir ortamda konaklamak isterseniz
+                    Avşa Kaan Motel sizin için keyifli bir seçenek olabilir.
+                </p>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

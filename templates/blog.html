@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+{% set title = "Avşa Blog | Avşa Adası Gezi Rehberi ve Tatil Yazıları" %}
+{% set description = "Avşa Adası hakkında gezilecek yerler, tarih, tatil önerileri ve konaklama rehberleri." %}
+
+{% block head %}
+<style>
+    .blog-hero {
+        padding: 70px 0 30px 0;
+        text-align: center;
+    }
+
+    .blog-hero h1 {
+        font-family: 'Cormorant Garamond', serif;
+        font-size: 3rem;
+        font-weight: 700;
+        margin-bottom: 14px;
+    }
+
+    .blog-hero p {
+        max-width: 780px;
+        margin: 0 auto;
+        color: #6b625b;
+        line-height: 1.9;
+    }
+
+    .blog-card {
+        background: rgba(255,255,255,0.76);
+        border-radius: 26px;
+        box-shadow: 0 16px 40px rgba(44,42,40,0.06);
+        overflow: hidden;
+        height: 100%;
+        transition: transform 0.25s ease, box-shadow 0.25s ease;
+    }
+
+    .blog-card:hover {
+        transform: translateY(-6px);
+        box-shadow: 0 22px 48px rgba(44,42,40,0.10);
+    }
+
+    .blog-image-wrap {
+        overflow: hidden;
+        height: 260px;
+    }
+
+    .blog-image-wrap img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: transform 0.4s ease;
+    }
+
+    .blog-card:hover .blog-image-wrap img {
+        transform: scale(1.04);
+    }
+
+    .blog-body {
+        padding: 28px 24px;
+        display: flex;
+        flex-direction: column;
+        height: calc(100% - 260px);
+    }
+
+    .blog-title {
+        font-family: 'Cormorant Garamond', serif;
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 12px;
+        line-height: 1.2;
+    }
+
+    .blog-desc {
+        color: #655f59;
+        line-height: 1.8;
+        flex-grow: 1;
+        margin-bottom: 20px;
+    }
+
+    .blog-actions .btn {
+        border-radius: 999px;
+        padding: 12px 22px;
+        font-weight: 700;
+    }
+
+    .btn-blog {
+        background: #b7754f;
+        color: #fff;
+        border: none;
+    }
+
+    .btn-blog:hover {
+        background: #a56541;
+        color: #fff;
+    }
+
+    .empty-state {
+        background: rgba(255,255,255,0.72);
+        border-radius: 24px;
+        padding: 40px 24px;
+        text-align: center;
+        box-shadow: 0 16px 40px rgba(44,42,40,0.06);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="blog-hero">
+    <div class="container">
+        <h1>Blog</h1>
+        <p>
+            Avşa Adası hakkında gezilecek yerler, tarih, tatil önerileri ve faydalı rehber yazılarımızı keşfedin.
+        </p>
+    </div>
+</section>
+
+<section class="pb-5">
+    <div class="container">
+        {% if posts %}
+        <div class="row">
+            {% for post in posts %}
+            <div class="col-lg-4 col-md-6 mb-4">
+                <div class="blog-card">
+                    {% if post.image %}
+                    <div class="blog-image-wrap">
+                        <img src="{{ post.image }}" alt="{{ post.title }}">
+                    </div>
+                    {% endif %}
+
+                    <div class="blog-body">
+                        <div class="blog-title">{{ post.title }}</div>
+
+                        <p class="blog-desc">
+                            {{ post.description }}
+                        </p>
+
+                        <div class="blog-actions">
+                            <a href="{{ url_for('blog_detail', slug=post.slug) }}" class="btn btn-blog">
+                                Devamını Oku
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <h3 class="mb-3" style="font-family:'Cormorant Garamond', serif; font-size:2rem;">Henüz blog yazısı eklenmedi</h3>
+            <p class="mb-0 text-muted">İlk blog yazınızı eklediğinizde burada görünecek.</p>
+        </div>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

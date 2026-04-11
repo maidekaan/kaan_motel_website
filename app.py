@@ -1,5 +1,8 @@
 import os
 import calendar
+import os
+import markdown
+from markupsafe import Markup
 from datetime import datetime, date, timedelta
 from functools import wraps
 
@@ -552,6 +555,80 @@ def build_calendar_matrix(year, month):
         "days": days,
         "rows": rows
     }
+BLOG_FOLDER = os.path.join("content", "blog")
+
+
+def parse_blog_post(filepath):
+    with open(filepath, "r", encoding="utf-8") as f:
+        raw = f.read().strip()
+
+    lines = raw.splitlines()
+
+    title = ""
+    description = ""
+    image = ""
+
+    content_start_index = 0
+
+    for i, line in enumerate(lines):
+        if line.startswith("title:"):
+            title = line.replace("title:", "", 1).strip()
+        elif line.startswith("description:"):
+            description = line.replace("description:", "", 1).strip()
+        elif line.startswith("image:"):
+            image = line.replace("image:", "", 1).strip()
+        elif line.strip() == "":
+            content_start_index = i + 1
+            break
+
+    body = "\n".join(lines[content_start_index:]).strip()
+    html_content = markdown.markdown(body, extensions=["extra"])
+
+    slug = os.path.splitext(os.path.basename(filepath))[0]
+
+    return {
+        "slug": slug,
+        "title": title,
+        "description": description,
+        "image": image,
+        "content": Markup(html_content),
+    }
+
+
+def load_blog_posts():
+    posts = []
+
+    if not os.path.exists(BLOG_FOLDER):
+        return posts
+
+    for filename in os.listdir(BLOG_FOLDER):
+        if filename.endswith(".md"):
+            filepath = os.path.join(BLOG_FOLDER, filename)
+            try:
+                post = parse_blog_post(filepath)
+                posts.append(post)
+            except Exception as e:
+                print(f"Blog yazısı okunamadı: {filename} -> {e}")
+
+    posts.sort(key=lambda x: x["slug"], reverse=True)
+    return posts
+
+
+@app.route("/blog")
+def blog():
+    posts = load_blog_posts()
+    return render_template("blog.html", posts=posts)
+
+
+@app.route("/blog/<slug>")
+def blog_detail(slug):
+    posts = load_blog_posts()
+    post = next((p for p in posts if p["slug"] == slug), None)
+
+    if not post:
+        abort(404)
+
+    return render_template("blog_detail.html", post=post)
 
 
 @app.context_processor

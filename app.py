@@ -1,6 +1,5 @@
 import os
 import calendar
-import os
 import markdown
 import smtplib
 from email.mime.text import MIMEText
@@ -23,12 +22,45 @@ app.config["SECRET_KEY"] = "kaanmotel-2026-secret"
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///sadakat.db"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.config["MANAGER_PASSWORD"] = "kaan2026"
+
 EMAIL_ADDRESS = "kaanmotelavsa@gmail.com"
 EMAIL_PASSWORD = "yrczorjajzsaydtn"
 EMAIL_TO = "kaanmotelavsa@gmail.com"
 
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
+def send_reservation_notification(reservation, room_name):
+    subject = "Yeni Website Rezervasyon Talebi"
+
+    body = f"""
+Yeni bir rezervasyon talebi alındı.
+
+Misafir Bilgileri
+- Ad Soyad: {reservation.guest_name}
+- E-posta: {reservation.guest_email}
+- Telefon: {reservation.guest_phone}
+
+Rezervasyon Bilgileri
+- Oda: {room_name}
+- Giriş Tarihi: {reservation.check_in.strftime("%d.%m.%Y")}
+- Çıkış Tarihi: {reservation.check_out.strftime("%d.%m.%Y")}
+- Yetişkin: {reservation.adults}
+- Çocuk: {reservation.children}
+- Toplam Fiyat: {reservation.total_price:,.0f} ₺
+- Kaynak: {reservation.source}
+- Durum: {reservation.status}
+"""
+
+    msg = MIMEMultipart()
+    msg["From"] = EMAIL_ADDRESS
+    msg["To"] = EMAIL_TO
+    msg["Subject"] = subject
+
+    msg.attach(MIMEText(body, "plain", "utf-8"))
+
+    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+        server.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
+        server.send_message(msg)
 
 CONTACT_INFO = {
     "address": "Deniz Mahallesi, Değirmenardı Mevkii, Zafer Sokak No:10, Avşa Adası",
@@ -892,11 +924,12 @@ def rezervasyon_yap():
         room_name = getattr(available_room, "name", f"Oda ID: {available_room.id}")
         send_reservation_notification(new_reservation, room_name)
     except Exception as e:
-        print(f"Mail bildirimi gönderilemedi: {e}")
+        import traceback
+        print("Mail hatası:")
+        traceback.print_exc()
 
     flash(f"Rezervasyon talebiniz başarıyla alındı. Toplam fiyat: {total_price:,.0f} ₺", "success")
     return redirect(url_for("index") + "#rezervasyon")
-
 
 @app.route("/yat-klubu")
 def yat_klubu():

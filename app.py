@@ -2,6 +2,9 @@ import os
 import calendar
 import os
 import markdown
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 from markupsafe import Markup
 from datetime import datetime, date, timedelta
 from functools import wraps
@@ -20,6 +23,9 @@ app.config["SECRET_KEY"] = "kaanmotel-2026-secret"
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///sadakat.db"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.config["MANAGER_PASSWORD"] = "kaan2026"
+EMAIL_ADDRESS = "kaanmotelavsa@gmail.com"
+EMAIL_PASSWORD = "yrczorjajzsaydtn"
+EMAIL_TO = "kaanmotelavsa@gmail.com"
 
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
@@ -881,6 +887,12 @@ def rezervasyon_yap():
 
     db.session.add(new_reservation)
     db.session.commit()
+
+    try:
+        room_name = getattr(available_room, "name", f"Oda ID: {available_room.id}")
+        send_reservation_notification(new_reservation, room_name)
+    except Exception as e:
+        print(f"Mail bildirimi gönderilemedi: {e}")
 
     flash(f"Rezervasyon talebiniz başarıyla alındı. Toplam fiyat: {total_price:,.0f} ₺", "success")
     return redirect(url_for("index") + "#rezervasyon")

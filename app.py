@@ -23,10 +23,9 @@ app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///sadakat.db"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.config["MANAGER_PASSWORD"] = "kaan2026"
 
-EMAIL_ADDRESS = "kaanmotelavsa@gmail.com"
-EMAIL_PASSWORD = "hgfbbdlpqjsjzkce"
-EMAIL_TO = "kaanmotelavsa@gmail.com"
-
+EMAIL_ADDRESS = os.environ.get("EMAIL_ADDRESS")
+EMAIL_PASSWORD = os.environ.get("EMAIL_PASSWORD")
+EMAIL_TO = os.environ.get("EMAIL_TO")
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
 def send_reservation_notification(reservation, room_name):

@@ -2,6 +2,7 @@ import os
 import calendar
 import markdown
 import smtplib
+import threading
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from markupsafe import Markup
@@ -54,12 +55,14 @@ Rezervasyon Bilgileri
     msg["From"] = EMAIL_ADDRESS
     msg["To"] = EMAIL_TO
     msg["Subject"] = subject
-
     msg.attach(MIMEText(body, "plain", "utf-8"))
 
-    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+    server = smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=10)
+    try:
         server.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
         server.send_message(msg)
+    finally:
+        server.quit()
 
 CONTACT_INFO = {
     "address": "Deniz Mahallesi, Değirmenardı Mevkii, Zafer Sokak No:10, Avşa Adası",
@@ -920,12 +923,12 @@ def rezervasyon_yap():
     db.session.commit()
 
     try:
-        room_name = getattr(available_room, "name", f"Oda ID: {available_room.id}")
-        send_reservation_notification(new_reservation, room_name)
+    	room_name = getattr(available_room, "name", f"Oda ID: {available_room.id}")
+    	send_reservation_notification(new_reservation, room_name)
     except Exception as e:
-        import traceback
-        print("Mail hatası:")
-        traceback.print_exc()
+    	import traceback
+    	print("Mail hatası:")
+    	traceback.print_exc()
 
     flash(f"Rezervasyon talebiniz başarıyla alındı. Toplam fiyat: {total_price:,.0f} ₺", "success")
     return redirect(url_for("index") + "#rezervasyon")

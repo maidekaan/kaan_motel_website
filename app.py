@@ -24,7 +24,7 @@ app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.config["MANAGER_PASSWORD"] = "kaan2026"
 
 EMAIL_ADDRESS = "kaanmotelavsa@gmail.com"
-EMAIL_PASSWORD = "yrczorjajzsaydtn"
+EMAIL_PASSWORD = "hgfbbdlpqjsjzkce"
 EMAIL_TO = "kaanmotelavsa@gmail.com"
 
 db = SQLAlchemy(app)

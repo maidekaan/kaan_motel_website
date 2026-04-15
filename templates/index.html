@@ -680,9 +680,9 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     async function refreshPrice() {
-        const roomType = roomTypeEl.value;
-        const checkIn = checkInEl.value;
-        const checkOut = checkOutEl.value;
+        const roomType = roomTypeEl ? roomTypeEl.value : "";
+        const checkIn = checkInEl ? checkInEl.value : "";
+        const checkOut = checkOutEl ? checkOutEl.value : "";
 
         if (!roomType) {
             nightlyEl.textContent = "-";
@@ -706,14 +706,14 @@ document.addEventListener("DOMContentLoaded", function () {
                 return;
             }
 
-            if (data.nightly_price) {
-                nightlyEl.textContent = formatTL(data.nightly_price);
+            if (data.nightly_price !== null && data.nightly_price !== undefined) {
+                nightlyEl.textContent = formatTL(Number(data.nightly_price));
             } else {
                 nightlyEl.textContent = "-";
             }
 
-            if (data.total_price && data.nights > 0) {
-                totalEl.textContent = `${formatTL(data.total_price)} (${data.nights} gece)`;
+            if (data.total_price !== null && data.total_price !== undefined && Number(data.nights) > 0) {
+                totalEl.textContent = `${formatTL(Number(data.total_price))} (${data.nights} gece)`;
             } else {
                 totalEl.textContent = "Tarih seçiniz";
             }

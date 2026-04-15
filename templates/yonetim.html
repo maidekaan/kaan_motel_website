@@ -225,85 +225,6 @@
 
             <div class="col-lg-7 mb-4">
                 <div class="manager-card">
-<div class="manager-card">
-    <h3>Fiyat Yönetimi</h3>
-
-    <div class="row">
-        <div class="col-lg-5 mb-4">
-            <form method="POST" action="{{ url_for('yonetim_fiyat_ekle') }}">
-                <div class="form-group">
-                    <label>Oda Tipi</label>
-                    <select name="room_type" class="form-control" required>
-                        <option value="">Seçiniz</option>
-                        <option value="standart">3 Kişilik Standart Oda</option>
-                        <option value="suit">Suit Oda</option>
-                        <option value="petsuit">Petsuit Oda</option>
-                    </select>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group col-md-6">
-                        <label>Başlangıç Tarihi</label>
-                        <input type="date" name="start_date" class="form-control" required>
-                    </div>
-                    <div class="form-group col-md-6">
-                        <label>Bitiş Tarihi</label>
-                        <input type="date" name="end_date" class="form-control" required>
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label>Gecelik Fiyat (₺)</label>
-                    <input type="number" name="nightly_price" class="form-control" min="0" step="1" required>
-                </div>
-
-                <div class="form-group">
-                    <label>Not</label>
-                    <input type="text" name="note" class="form-control" placeholder="Örn: yüksek sezon / bayram / özel dönem">
-                </div>
-
-                <button type="submit" class="btn btn-block" style="background:#b7754f; color:#fff; border-radius:999px; padding:12px 18px;">
-                    Fiyat Kuralı Ekle
-                </button>
-            </form>
-        </div>
-
-        <div class="col-lg-7 mb-4">
-            {% if price_rules %}
-            <div class="table-responsive">
-                <table class="table table-sm">
-                    <thead>
-                        <tr>
-                            <th>Oda Tipi</th>
-                            <th>Tarih Aralığı</th>
-                            <th>Gecelik</th>
-                            <th>Not</th>
-                            <th></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for rule in price_rules %}
-                        <tr>
-                            <td>{{ room_definitions[rule.room_type].name if rule.room_type in room_definitions else rule.room_type }}</td>
-                            <td>{{ rule.start_date.strftime('%d.%m.%Y') }} - {{ rule.end_date.strftime('%d.%m.%Y') }}</td>
-                            <td>{{ "%.0f"|format(rule.nightly_price) }} ₺</td>
-                            <td>{{ rule.note or '-' }}</td>
-                            <td class="text-right">
-                                <a href="{{ url_for('yonetim_fiyat_sil', rule_id=rule.id) }}" class="btn btn-sm btn-outline-danger">
-                                    Sil
-                                </a>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-            {% else %}
-            <p class="mb-0 text-muted">Henüz tanımlı fiyat kuralı bulunmuyor.</p>
-            {% endif %}
-        </div>
-    </div>
-</div>
                     <h3>Website Rezervasyon Talepleri</h3>
 
                     {% if reservations %}
@@ -356,6 +277,174 @@
                     </div>
                     {% else %}
                     <p class="mb-0">Henüz website üzerinden gelen rezervasyon talebi yok.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="manager-card">
+            <h3>Fiyat Yönetimi</h3>
+
+            <div class="row">
+                <div class="col-lg-5 mb-4">
+                    <form action="{{ url_for('fiyat_ekle') }}" method="POST">
+                        <div class="form-group">
+                            <label>Oda Tipi</label>
+                            <select name="room_type" class="form-control" required>
+                                <option value="">Seçiniz</option>
+                                <option value="standart">Standart</option>
+                                <option value="suit">Suit</option>
+                                <option value="petsuit">Petsuit</option>
+                            </select>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group col-md-6">
+                                <label>Başlangıç Tarihi</label>
+                                <input type="date" name="start_date" class="form-control" required>
+                            </div>
+                            <div class="form-group col-md-6">
+                                <label>Bitiş Tarihi</label>
+                                <input type="date" name="end_date" class="form-control" required>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Gecelik Fiyat (₺)</label>
+                            <input type="number" step="0.01" name="price_per_night" class="form-control" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Not</label>
+                            <input type="text" name="note" class="form-control" placeholder="İsteğe bağlı not">
+                        </div>
+
+                        <button type="submit" class="btn btn-block" style="background:#b7754f; color:#fff; border-radius:999px; padding:12px 18px;">
+                            Fiyatı Kaydet
+                        </button>
+                    </form>
+                </div>
+
+                <div class="col-lg-7 mb-4">
+                    {% if seasonal_prices %}
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Oda Tipi</th>
+                                    <th>Başlangıç</th>
+                                    <th>Bitiş</th>
+                                    <th>Fiyat</th>
+                                    <th>Not</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for price in seasonal_prices %}
+                                <tr>
+                                    <td>{{ price.room_type }}</td>
+                                    <td>{{ price.start_date.strftime("%d.%m.%Y") }}</td>
+                                    <td>{{ price.end_date.strftime("%d.%m.%Y") }}</td>
+                                    <td>{{ "%.0f"|format(price.price_per_night) }} ₺</td>
+                                    <td>{{ price.note or "-" }}</td>
+                                    <td class="text-right">
+                                        <form action="{{ url_for('fiyat_sil', price_id=price.id) }}" method="POST" onsubmit="return confirm('Bu fiyat kaydını silmek istediğinize emin misiniz?');">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger">Sil</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="mb-0 text-muted">Henüz veritabanında fiyat kaydı bulunmuyor.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="manager-card">
+            <h3>Takvim Blokları</h3>
+
+            <div class="row">
+                <div class="col-lg-5 mb-4">
+                    <form action="{{ url_for('takvim_blok_ekle') }}" method="POST">
+                        <div class="form-group">
+                            <label>Oda Tipi</label>
+                            <select name="room_type" class="form-control" required>
+                                <option value="">Seçiniz</option>
+                                <option value="standart">Standart</option>
+                                <option value="suit">Suit</option>
+                                <option value="petsuit">Petsuit</option>
+                            </select>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group col-md-6">
+                                <label>Başlangıç Tarihi</label>
+                                <input type="date" name="start_date" class="form-control" required>
+                            </div>
+                            <div class="form-group col-md-6">
+                                <label>Bitiş Tarihi</label>
+                                <input type="date" name="end_date" class="form-control" required>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Durum</label>
+                            <select name="status" class="form-control">
+                                <option value="Kapalı">Kapalı</option>
+                                <option value="Rezerve">Rezerve</option>
+                                <option value="Bakımda">Bakımda</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Not</label>
+                            <input type="text" name="note" class="form-control" placeholder="İsteğe bağlı not">
+                        </div>
+
+                        <button type="submit" class="btn btn-block" style="background:#b7754f; color:#fff; border-radius:999px; padding:12px 18px;">
+                            Takvime Blok Ekle
+                        </button>
+                    </form>
+                </div>
+
+                <div class="col-lg-7 mb-4">
+                    {% if calendar_blocks %}
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Oda Tipi</th>
+                                    <th>Başlangıç</th>
+                                    <th>Bitiş</th>
+                                    <th>Durum</th>
+                                    <th>Not</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for block in calendar_blocks %}
+                                <tr>
+                                    <td>{{ block.room_type }}</td>
+                                    <td>{{ block.start_date.strftime("%d.%m.%Y") }}</td>
+                                    <td>{{ block.end_date.strftime("%d.%m.%Y") }}</td>
+                                    <td>{{ block.status }}</td>
+                                    <td>{{ block.note or "-" }}</td>
+                                    <td class="text-right">
+                                        <form action="{{ url_for('takvim_blok_sil', block_id=block.id) }}" method="POST" onsubmit="return confirm('Bu takvim bloğunu silmek istediğinize emin misiniz?');">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger">Sil</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="mb-0 text-muted">Henüz veritabanında takvim bloğu bulunmuyor.</p>
                     {% endif %}
                 </div>
             </div>

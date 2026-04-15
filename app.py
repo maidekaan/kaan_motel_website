@@ -20,7 +20,7 @@ from sqlalchemy import and_
 
 app = Flask(__name__)
 app.config["SECRET_KEY"] = "kaanmotel-2026-secret"
-app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///sadakat.db"
+app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///hotel.db"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.config["MANAGER_PASSWORD"] = "kaan2026"
 
@@ -29,6 +29,220 @@ EMAIL_PASSWORD = os.environ.get("EMAIL_PASSWORD")
 EMAIL_TO = os.environ.get("EMAIL_TO")
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
+class SeasonalPrice(db.Model):
+    __tablename__ = "seasonal_prices"
+
+    id = db.Column(db.Integer, primary_key=True)
+    room_type = db.Column(db.String(50), nullable=False, index=True)
+    start_date = db.Column(db.Date, nullable=False, index=True)
+    end_date = db.Column(db.Date, nullable=False, index=True)
+    price_per_night = db.Column(db.Float, nullable=False)
+    note = db.Column(db.String(200), nullable=True)
+
+    def __repr__(self):
+        return f"<SeasonalPrice {self.room_type} {self.start_date} - {self.end_date}>"
+
+
+class AdminCalendarBlock(db.Model):
+    __tablename__ = "admin_calendar_blocks"
+
+    id = db.Column(db.Integer, primary_key=True)
+    room_type = db.Column(db.String(50), nullable=False, index=True)
+    start_date = db.Column(db.Date, nullable=False, index=True)
+    end_date = db.Column(db.Date, nullable=False, index=True)
+    status = db.Column(db.String(30), nullable=False, default="Kapalı")
+    note = db.Column(db.String(200), nullable=True)
+
+    def __repr__(self):
+        return f"<AdminCalendarBlock {self.room_type} {self.start_date} - {self.end_date}>"
+def get_price_for_date(room_type, target_date):
+    price_row = SeasonalPrice.query.filter(
+        SeasonalPrice.room_type == room_type,
+        SeasonalPrice.start_date <= target_date,
+        SeasonalPrice.end_date >= target_date
+    ).order_by(SeasonalPrice.start_date.desc()).first()
+
+    if not price_row:
+        return None
+
+    return price_row.price_per_night
+
+
+def calculate_total_price(room_type, check_in_date, check_out_date):
+    normalized_room_type = normalize_room_type(room_type)
+
+    if check_out_date <= check_in_date:
+        raise ValueError("Çıkış tarihi giriş tarihinden sonra olmalı.")
+
+    total = 0
+    current_date = check_in_date
+
+    while current_date < check_out_date:
+        nightly_price = get_price_for_date(normalized_room_type, current_date)
+
+        if nightly_price is None:
+            raise ValueError(
+                f"{normalized_room_type} için {current_date.strftime('%d.%m.%Y')} tarihinde fiyat tanımlı değil."
+            )
+
+        total += float(nightly_price)
+        current_date += timedelta(days=1)
+
+    return float(total)
+
+
+def check_admin_calendar_block(room_type, check_in_date, check_out_date):
+    block = AdminCalendarBlock.query.filter(
+        AdminCalendarBlock.room_type == room_type,
+        AdminCalendarBlock.end_date > check_in_date,
+        AdminCalendarBlock.start_date < check_out_date
+    ).first()
+
+    return block
+def normalize_room_type(room_type):
+    if not room_type:
+        return None
+
+    value = str(room_type).strip().lower()
+
+    mapping = {
+        "standart": "standart",
+        "standard": "standart",
+        "3 kişilik standart oda": "standart",
+        "3 kisilik standart oda": "standart",
+        "suit": "suit",
+        "suite": "suit",
+        "petsuit": "petsuit",
+        "pet suit": "petsuit",
+        "pet-dostu": "petsuit",
+        "pet dostu": "petsuit",
+        "pet-dostu oda": "petsuit",
+        "pet dostu oda": "petsuit",
+    }
+
+    return mapping.get(value, value)
+
+
+def get_lowest_defined_price(room_type):
+    normalized_room_type = normalize_room_type(room_type)
+
+    price_row = SeasonalPrice.query.filter(
+        SeasonalPrice.room_type == normalized_room_type
+    ).order_by(SeasonalPrice.price_per_night.asc()).first()
+
+    if not price_row:
+        return None
+
+    return price_row.price_per_night
+
+
+def get_price_for_date(room_type, target_date):
+    normalized_room_type = normalize_room_type(room_type)
+
+    price_row = SeasonalPrice.query.filter(
+        SeasonalPrice.room_type == normalized_room_type,
+        SeasonalPrice.start_date <= target_date,
+        SeasonalPrice.end_date >= target_date
+    ).order_by(SeasonalPrice.start_date.desc()).first()
+
+    if not price_row:
+        return None
+
+    return price_row.price_per_night
+
+
+
+
+
+def check_admin_calendar_block(room_type, check_in_date, check_out_date):
+    normalized_room_type = normalize_room_type(room_type)
+
+    block = AdminCalendarBlock.query.filter(
+        AdminCalendarBlock.room_type == normalized_room_type,
+        AdminCalendarBlock.end_date > check_in_date,
+        AdminCalendarBlock.start_date < check_out_date
+    ).first()
+
+    return block
+@app.route("/yonetim/fiyat-ekle", methods=["POST"])
+def fiyat_ekle():
+    room_type = request.form.get("room_type")
+    start_date = request.form.get("start_date")
+    end_date = request.form.get("end_date")
+    price_per_night = request.form.get("price_per_night")
+    note = request.form.get("note")
+
+    try:
+        start_date = datetime.strptime(start_date, "%Y-%m-%d").date()
+        end_date = datetime.strptime(end_date, "%Y-%m-%d").date()
+        price_per_night = float(price_per_night)
+    except Exception:
+        flash("Fiyat bilgileri geçersiz.", "danger")
+        return redirect(url_for("yonetim"))
+
+    new_price = SeasonalPrice(
+        room_type=room_type,
+        start_date=start_date,
+        end_date=end_date,
+        price_per_night=price_per_night,
+        note=note
+    )
+
+    db.session.add(new_price)
+    db.session.commit()
+
+    flash("Fiyat kaydı başarıyla eklendi.", "success")
+    return redirect(url_for("yonetim"))
+
+
+@app.route("/yonetim/takvim-blok-ekle", methods=["POST"])
+def takvim_blok_ekle():
+    room_type = request.form.get("room_type")
+    start_date = request.form.get("start_date")
+    end_date = request.form.get("end_date")
+    status = request.form.get("status", "Kapalı")
+    note = request.form.get("note")
+
+    try:
+        start_date = datetime.strptime(start_date, "%Y-%m-%d").date()
+        end_date = datetime.strptime(end_date, "%Y-%m-%d").date()
+    except Exception:
+        flash("Takvim tarihleri geçersiz.", "danger")
+        return redirect(url_for("yonetim"))
+
+    new_block = AdminCalendarBlock(
+        room_type=room_type,
+        start_date=start_date,
+        end_date=end_date,
+        status=status,
+        note=note
+    )
+
+    db.session.add(new_block)
+    db.session.commit()
+
+    flash("Takvim bloğu başarıyla eklendi.", "success")
+    return redirect(url_for("yonetim"))
+
+
+@app.route("/yonetim/fiyat-sil/<int:price_id>", methods=["POST"])
+def fiyat_sil(price_id):
+    price = SeasonalPrice.query.get_or_404(price_id)
+    db.session.delete(price)
+    db.session.commit()
+
+    flash("Fiyat kaydı silindi.", "warning")
+    return redirect(url_for("yonetim"))
+
+
+@app.route("/yonetim/takvim-blok-sil/<int:block_id>", methods=["POST"])
+def takvim_blok_sil(block_id):
+    block = AdminCalendarBlock.query.get_or_404(block_id)
+    db.session.delete(block)
+    db.session.commit()
+
+    flash("Takvim bloğu silindi.", "warning")
+    return redirect(url_for("yonetim"))
 def send_reservation_notification(reservation, room_name):
     subject = "Yeni Website Rezervasyon Talebi"
 
@@ -127,7 +341,6 @@ ROOM_DEFINITIONS = {
             "araması yapan misafirler için ideal bir seçenektir. Ferah yapısı, kullanışlı düzeni "
             "ve denize yakın konumuyla rahat bir tatil deneyimi sunar."
         ),
-        "default_price": 3000,
         "capacity": 3,
         "folder_names": ["standart"],
     },
@@ -327,13 +540,6 @@ def get_nightly_price(room_type, target_date):
     return get_default_price(normalized)
 
 
-def calculate_total_price(room_type, check_in, check_out):
-    total = 0.0
-    current = check_in
-    while current < check_out:
-        total += get_nightly_price(room_type, current)
-        current += timedelta(days=1)
-    return total
 
 
 def load_room_data_from_static():
@@ -717,11 +923,21 @@ def api_calculate_price():
 
     normalized_room_type = normalize_room_type(room_type)
 
+    if not normalized_room_type:
+        return jsonify({"ok": False, "message": "Geçersiz oda tipi."}), 400
+
     if not check_in_str or not check_out_str:
-        nightly_price = get_lowest_price(normalized_room_type)
+        lowest_price = get_lowest_defined_price(normalized_room_type)
+
+        if lowest_price is None:
+            return jsonify({
+                "ok": False,
+                "message": "Bu oda tipi için henüz fiyat tanımlı değil."
+            }), 404
+
         return jsonify({
             "ok": True,
-            "nightly_price": nightly_price,
+            "nightly_price": float(lowest_price),
             "total_price": None,
             "nights": 0
         })
@@ -735,15 +951,24 @@ def api_calculate_price():
     if check_in >= check_out:
         return jsonify({"ok": False, "message": "Çıkış tarihi girişten sonra olmalı."}), 400
 
-    nightly_price = get_nightly_price(normalized_room_type, check_in)
-    total_price = calculate_total_price(normalized_room_type, check_in, check_out)
-    nights = (check_out - check_in).days
+    try:
+        nightly_price = get_price_for_date(normalized_room_type, check_in)
+        total_price = calculate_total_price(normalized_room_type, check_in, check_out)
+        nights = (check_out - check_in).days
+    except ValueError as e:
+        return jsonify({"ok": False, "message": str(e)}), 400
+
+    if nightly_price is None:
+        return jsonify({
+            "ok": False,
+            "message": "Seçilen tarihler için fiyat tanımlı değil."
+        }), 404
 
     return jsonify({
         "ok": True,
-        "nightly_price": nightly_price,
-        "total_price": total_price,
-        "nights": nights
+        "nightly_price": float(nightly_price),
+        "total_price": float(total_price),
+        "nights": int(nights)
     })
 
 
@@ -769,17 +994,25 @@ def galeri():
 @app.route("/odalar")
 def odalar():
     seo = build_seo(
-        "Kaan Motel Odalar | Avşa Otel Fiyatları ve Oda Seçenekleri",
-        "Avşa otel fiyatları ve oda seçenekleri için Kaan Motel odalarını inceleyin. Standart, suit ve petsuit konaklama alternatifleri burada."
+        "Odalar | Kaan Motel Avşa Adası",
+        "Avşa Adası Kaan Motel oda seçenekleri, özellikleri ve güncel fiyat bilgileri."
     )
+
+    rooms = load_room_data_from_static()
+
+    lowest_prices = {
+        "standart": get_lowest_defined_price("standart"),
+        "suit": get_lowest_defined_price("suit"),
+        "petsuit": get_lowest_defined_price("petsuit"),
+    }
 
     return render_template(
         "odalar.html",
         title=seo["title"],
         description=seo["description"],
-        rooms=load_room_data_from_static()
+        rooms=rooms,
+        lowest_prices=lowest_prices
     )
-
 
 @app.route("/odalar/<room_id>")
 def oda_detay(room_id):
@@ -893,17 +1126,18 @@ def rezervasyon_yap():
         flash("Bu tarihlerde oda müsait değil.", "danger")
         return redirect(url_for("index") + "#rezervasyon")
 
-    final_block_conflict = ManualBlock.query.filter(
-        ManualBlock.room_id == available_room.id,
-        ManualBlock.check_out > check_in_date,
-        ManualBlock.check_in < check_out_date
-    ).first()
+    final_block_conflict = check_admin_calendar_block(room_type_kod, check_in_date, check_out_date)
 
     if final_block_conflict:
-        flash("Bu tarihlerde oda müsait değil.", "danger")
+        flash("Bu tarihler yönetim panelinden kapatılmış görünüyor.", "danger")
         return redirect(url_for("index") + "#rezervasyon")
-
-    total_price = calculate_total_price(room_type_kod, check_in_date, check_out_date)
+    try:
+        total_price = calculate_total_price(room_type_kod, check_in_date, check_out_date)
+    except ValueError as e:
+    	flash(str(e), "danger")
+    return redirect(url_for("index") + "#rezervasyon")
+    print("ROOM TYPE GELEN:", room_type_kod)
+    print("HESAPLANAN TOTAL PRICE:", total_price)
 
     new_reservation = Reservation(
         guest_name=guest_name,
@@ -1003,9 +1237,11 @@ def yonetim():
 
     reservations = Reservation.query.order_by(Reservation.check_in.asc()).all()
     manual_blocks = ManualBlock.query.order_by(ManualBlock.check_in.asc()).all()
-    price_rules = PriceRule.query.order_by(PriceRule.start_date.asc(), PriceRule.room_type.asc()).all()
     rooms = Room.query.order_by(Room.room_number.asc()).all()
     calendar_data = build_calendar_matrix(selected_year, selected_month)
+
+    seasonal_prices = SeasonalPrice.query.order_by(SeasonalPrice.start_date.desc()).all()
+    calendar_blocks = AdminCalendarBlock.query.order_by(AdminCalendarBlock.start_date.desc()).all()
 
     return render_template(
         "yonetim.html",
@@ -1013,64 +1249,22 @@ def yonetim():
         description=seo["description"],
         reservations=reservations,
         manual_blocks=manual_blocks,
-        price_rules=price_rules,
         rooms=rooms,
         source_options=SOURCE_OPTIONS,
         calendar_data=calendar_data,
         selected_year=selected_year,
         selected_month=selected_month,
         get_room_display_name=get_room_display_name,
-        room_definitions=ROOM_DEFINITIONS
+        room_definitions=ROOM_DEFINITIONS,
+        seasonal_prices=seasonal_prices,
+        calendar_blocks=calendar_blocks
     )
 
 
-@app.route("/yonetim/fiyat-ekle", methods=["POST"])
-@manager_required
-def yonetim_fiyat_ekle():
-    room_type = normalize_room_type(request.form.get("room_type"))
-    start_date_str = request.form.get("start_date")
-    end_date_str = request.form.get("end_date")
-    nightly_price_str = request.form.get("nightly_price")
-    note = (request.form.get("note") or "").strip()
-
-    if not room_type or not start_date_str or not end_date_str or not nightly_price_str:
-        flash("Lütfen fiyat tanımı için tüm zorunlu alanları doldurun.", "danger")
-        return redirect(url_for("yonetim"))
-
-    try:
-        start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date()
-        end_date = datetime.strptime(end_date_str, "%Y-%m-%d").date()
-        nightly_price = float(nightly_price_str)
-    except ValueError:
-        flash("Fiyat veya tarih formatı geçersiz.", "danger")
-        return redirect(url_for("yonetim"))
-
-    if end_date < start_date:
-        flash("Bitiş tarihi başlangıç tarihinden önce olamaz.", "danger")
-        return redirect(url_for("yonetim"))
-
-    new_rule = PriceRule(
-        room_type=room_type,
-        start_date=start_date,
-        end_date=end_date,
-        nightly_price=nightly_price,
-        note=note or None
-    )
-    db.session.add(new_rule)
-    db.session.commit()
-
-    flash("Fiyat kuralı başarıyla eklendi.", "success")
-    return redirect(url_for("yonetim"))
 
 
-@app.route("/yonetim/fiyat-sil/<int:rule_id>")
-@manager_required
-def yonetim_fiyat_sil(rule_id):
-    rule = PriceRule.query.get_or_404(rule_id)
-    db.session.delete(rule)
-    db.session.commit()
-    flash("Fiyat kuralı silindi.", "warning")
-    return redirect(url_for("yonetim"))
+
+
 
 
 @app.route("/yonetim/blok-ekle", methods=["POST"])
@@ -1263,7 +1457,8 @@ def not_found(error):
         description="Aradığınız sayfa bulunamadı."
     ), 404
 
-
+with app.app_context():
+    db.create_all()
 if __name__ == "__main__":
     with app.app_context():
         db.create_all()

@@ -181,20 +181,23 @@
                         </div>
 
                         <div class="room-price">
-                            <div class="room-price-title">Başlangıç gecelik fiyat</div>
-                            <strong>
-                                {% if room.price_per_night is number %}
-                                    {{ "%.0f"|format(room.price_per_night) }} ₺'den başlayan fiyatlar
-                                {% else %}
-                                    {{ room.price_per_night }}
-                                {% endif %}
-                            </strong>
+    <div class="room-price-title">Başlangıç gecelik fiyat</div>
+    <strong>
+        {% set room_type_key = room.id if room.id in ['standart', 'suit', 'petsuit'] else room.get('id') %}
+        {% set lowest_price = lowest_prices.get(room_type_key) %}
 
-                            <div class="room-price-note">
-                                <i class="fas fa-info-circle mr-1"></i>
-                                Fiyat bilgisi için lütfen rezervasyon ekranından tarih belirleyin.
-                            </div>
-                        </div>
+        {% if lowest_price %}
+            {{ "%.0f"|format(lowest_price) }} ₺'den başlayan fiyatlar
+        {% else %}
+            Fiyat tanımlı değil
+        {% endif %}
+    </strong>
+
+    <div class="room-price-note">
+        <i class="fas fa-info-circle mr-1"></i>
+        Güncel toplam fiyat için lütfen tarih seçin.
+    </div>
+</div>
 
                         <div class="room-actions d-flex flex-wrap" style="gap:10px;">
                             <a href="{{ url_for('oda_detay', room_id=room.id) }}" class="btn btn-room">

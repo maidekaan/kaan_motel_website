@@ -34,6 +34,11 @@ Doğal yapısını büyük ölçüde koruyan Mavi Koy, kalabalıktan uzaklaşmak
 
 ## Şarap Fabrikaları
 
+---
+## 🏡 Konaklama
+
+Avşa’da sakin, merkezi ve konforlu bir konaklama arıyorsanız bizimle iletişime geçebilirsiniz.
+
 Avşa Adası, bağcılık ve şarap üretimiyle de bilinir. Adada bulunan şarap fabrikaları, ziyaretçilere hem üretim sürecini görme hem de yerel şarapları tatma imkânı sunar.
 
 Özellikle Ada Karası üzümünden üretilen şaraplar, Avşa’nın en bilinen yerel lezzetlerinden biridir.
@@ -55,7 +60,7 @@ Avşa merkezine göre daha az kalabalık olan bu köy, özellikle akşam saatler
 Avşa Adası’nı keşfederken merkezi konuma yakın, denize yürüyüş mesafesinde ve sessiz bir ortamda konaklamak tatilinizi çok daha keyifli hale getirir.
 
 Avşa Kaan Motel, bahçe içinde sunduğu sakin atmosfer ve denize yakın konumu ile Avşa’da konaklama için tercih edilebilecek seçeneklerden biridir.
-
+👉 [Rezervasyon Yap](/#rezervasyon)
 ## Sonuç
 
 Avşa Adası’nda gezilecek yerler, her zevke hitap eden farklı deneyimler sunar. Plajlardan koylara, bağlardan köylere kadar birçok noktayı keşfederek tatilinizi unutulmaz hale getirebilirsiniz.

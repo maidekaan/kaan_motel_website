@@ -69,3 +69,9 @@ Avşa Kaan Motel, denize yakın konumu ve bahçe içinde sunduğu sakin atmosfer
 Avşa Adası’nda üzüm hasadı ve Ada Karası üzümü, adanın sadece doğal güzellikleriyle değil, kültürel zenginliğiyle de öne çıktığını gösterir.
 
 Eğer yolunuz Avşa Adası’na düşerse, bu yerel mirası yerinde deneyimlemeyi unutmayın.
+---
+## 🏡 Konaklama
+
+Avşa’da sakin, merkezi ve konforlu bir konaklama arıyorsanız bizimle iletişime geçebilirsiniz.
+
+👉 [Rezervasyon Yap](/#rezervasyon)

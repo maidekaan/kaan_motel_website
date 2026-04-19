@@ -33,3 +33,9 @@ Avşa Adası’nı keşfederken denize yakın, sakin ve bahçe içinde bir ortam
 ## Sonuç
 
 Avşa Adası tarihi, binlerce yıllık geçmişiyle Marmara’nın en özel noktalarından biridir. Antik dönemlerden bugüne uzanan bu yolculuk, adayı sadece bir tatil yeri değil, aynı zamanda kültürel bir keşif alanı haline getirir.
+---
+## 🏡 Konaklama
+
+Avşa’da sakin, merkezi ve konforlu bir konaklama arıyorsanız bizimle iletişime geçebilirsiniz.
+
+👉 [Rezervasyon Yap](/#rezervasyon)

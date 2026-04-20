@@ -87,12 +87,6 @@ Avşa Adası’na ulaşım oldukça kolay ve farklı seçeneklerle mümkündür.
 
 ---
 
-## 🔗 Diğer Yazılar
-
-- Avşa’da Gezilecek Yerler
-- Avşa Adası’nın Tarihi
-- Ada Karası Üzüm Hasadı ve Festivali
-
 
 
 ## 🔗 Diğer Yazılar
